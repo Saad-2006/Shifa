@@ -9,6 +9,7 @@ import type {
   TestStatus,
   Urgency,
 } from "@/lib/types";
+import { displayName } from "@/lib/identity";
 
 export const URGENCY_RANK: Record<Urgency, number> = { normal: 0, routine: 1, soon: 2, emergency: 3 };
 const SEVERITY_RANK: Record<Severity, number> = { none: 0, mild: 1, marked: 2, critical: 3 };
@@ -687,7 +688,7 @@ export function checkReport(
   };
   // Who the report says it's for (shown on the card so families can confirm at a glance).
   const str = (v: unknown) => (typeof v === "string" ? v.trim() : "");
-  const patient = { name: str(x?.patientName), age: str(x?.patientAge), sex: str(x?.patientSex) };
+  const patient = { name: displayName(str(x?.patientName)), age: str(x?.patientAge), sex: str(x?.patientSex) };
   if (patient.name || patient.age || patient.sex) report.patient = patient;
   return report;
 }

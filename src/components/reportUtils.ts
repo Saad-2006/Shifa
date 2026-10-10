@@ -2,7 +2,8 @@
 import type { LucideIcon } from "lucide-react";
 import { CircleAlert, CircleArrowDown, CircleArrowUp, CircleCheck, CircleMinus, Siren, TriangleAlert } from "lucide-react";
 import { t, type I18nKey } from "@/lib/i18n";
-import type { CheckedTest, LabReport, Lang, Person, Urgency } from "@/lib/types";
+import type { CheckedTest, LabReport, Lang, PatientOnReport, Person, Urgency } from "@/lib/types";
+import { displayName, parseAge, parseSex } from "@/lib/identity";
 
 export type Tone = "ok" | "warn" | "bad" | "muted" | "emergency";
 
@@ -103,4 +104,17 @@ export function personReports(reports: LabReport[], personId: string | null | un
 export function initialOf(p: Pick<Person, "name"> | null | undefined): string {
   const n = p?.name?.trim();
   return n ? n.charAt(0).toUpperCase() : "?";
+}
+
+/** "IMRAN QURESHI ." / "35 (Y)" / "M" -> "Imran Qureshi · 35 yrs · Male" (raw text when it can't be read). */
+export function patientLine(p: PatientOnReport, lang: Lang): string {
+  const age = parseAge(p.age);
+  const sex = parseSex(p.sex);
+  return [
+    displayName(p.name) || p.name.trim(),
+    age !== null && age >= 1 ? t("years", lang, { n: Math.floor(age) }) : p.age.trim(),
+    sex === "F" ? t("sexF", lang) : sex === "M" ? t("sexM", lang) : p.sex.trim(),
+  ]
+    .filter(Boolean)
+    .join(" · ");
 }

@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Merge, Trash, X } from "lucide-react";
-import { t, urduFont } from "@/lib/i18n";
-import { RELATIONS, personSubtitle } from "@/lib/relations";
+import { formatDate, t, urduFont } from "@/lib/i18n";
+import { latestReportAge } from "@/lib/identity";
+import { RELATIONS, isKnownRelation, personSubtitle, specificRelation } from "@/lib/relations";
 import { shifa } from "@/lib/store";
 import type { LabReport, Lang, Person, Sex } from "@/lib/types";
 
@@ -31,16 +32,19 @@ export default function PersonEditSheet({
   const [sex, setSex] = useState<Sex>("");
   const [confirmDelete, setConfirmDelete] = useState(false);
   const open = person !== null;
+  // Age printed on their newest report, adjusted to today: fills an empty age box.
+  const reportAge = useMemo(() => (person ? latestReportAge(reports, person.id) : null), [person, reports]);
+  const ageFromReport = reportAge?.now;
 
   useEffect(() => {
     if (!person) return;
     setName(person.name);
-    setRelation(person.relation);
-    setCustom(!!person.relation.trim() && !RELATIONS.some((r) => r.value.toLowerCase() === person.relation.trim().toLowerCase()));
-    setAge(typeof person.age === "number" ? String(person.age) : "");
+    setRelation(specificRelation(person.relation, person.sex)); // old "Sibling" + Male -> "Brother"
+    setCustom(!!person.relation.trim() && !isKnownRelation(person.relation));
+    setAge(typeof person.age === "number" ? String(person.age) : ageFromReport !== undefined ? String(ageFromReport) : "");
     setSex(person.sex ?? "");
     setConfirmDelete(false);
-  }, [person]);
+  }, [person, ageFromReport]);
 
   useEffect(() => {
     if (!open) return;
@@ -125,6 +129,7 @@ export default function PersonEditSheet({
                   onClick={() => {
                     setCustom(false);
                     setRelation(r.value);
+                    if (r.sex) setSex(r.sex); // "Sister" is female
                   }}
                   className={`${chip(!custom && relation.trim().toLowerCase() === r.value.toLowerCase())} ${ur}`}
                 >
@@ -176,6 +181,15 @@ export default function PersonEditSheet({
                 ))}
               </div>
             </fieldset>
+            {reportAge && (
+              <p className={`col-span-2 -mt-1 text-xs text-muted ${ur}`}>
+                {t(reportAge.now === reportAge.printed ? "ageHintSame" : "ageHint", lang, {
+                  date: formatDate(reportAge.reportDate, lang),
+                  age: reportAge.printed,
+                  now: reportAge.now,
+                })}
+              </p>
+            )}
           </div>
 
           <button type="submit" className={`min-h-12 w-full rounded-input bg-accent px-4 font-semibold text-white hover:bg-accent-hover ${ur}`}>

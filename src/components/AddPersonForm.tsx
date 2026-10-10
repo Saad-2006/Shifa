@@ -2,9 +2,8 @@
 
 import { useId, useState } from "react";
 import { t, urduFont } from "@/lib/i18n";
+import { RELATIONS } from "@/lib/relations";
 import type { Lang } from "@/lib/types";
-
-const RELATIONS = ["Self", "Mother", "Father", "Wife", "Husband", "Son", "Daughter", "Grandmother", "Grandfather", "Sister", "Brother"];
 
 export interface NewPerson {
   name: string;
@@ -74,7 +73,7 @@ export default function AddPersonForm({
           />
           <datalist id={`${id}-relations`}>
             {RELATIONS.map((r) => (
-              <option key={r} value={r} />
+              <option key={r.value} value={r.value} />
             ))}
           </datalist>
         </label>

@@ -5,6 +5,7 @@ import { UserCheck, UserPlus, UserRoundSearch, X } from "lucide-react";
 import { t, urduFont, type I18nKey } from "@/lib/i18n";
 import type { IdentityConflict, Lang, PendingIdentity, Person } from "@/lib/types";
 import { findPersonByName } from "@/lib/identity";
+import { patientLine } from "./reportUtils";
 import type { IdentityChoice } from "./useShifaChat";
 
 function sexWord(sex: string, lang: Lang): string {
@@ -43,7 +44,7 @@ export default function IdentityCheckCard({
   const others = people.filter((p) => p.id !== pending.forPersonId && p.id !== suggested?.id);
   const byName = findPersonByName(others, pending.patient.name);
   const { name, age, sex } = pending.patient;
-  const onReport = [name, age, sexWord(sex, lang)].filter(Boolean).join(" · ");
+  const onReport = patientLine({ name, age, sex }, lang);
   const ur = urduFont(lang);
   // A profile with this printed name already exists: offer it, never a duplicate "New profile".
   const existing = findPersonByName(people, name);

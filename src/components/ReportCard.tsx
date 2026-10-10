@@ -2,13 +2,14 @@
 
 import { FileText, ShieldCheck, UserRound } from "lucide-react";
 import { formatDate, t, urduFont } from "@/lib/i18n";
-import type { AlertContact, LabReport, Lang } from "@/lib/types";
-import { RELATIONS } from "@/lib/relations";
+import type { AlertContact, LabReport, Lang, Sex } from "@/lib/types";
+import { parseSex } from "@/lib/identity";
+import { quickRelations } from "@/lib/relations";
 import { reportAlertText } from "@/lib/whatsapp";
 import WhatsAppAlertButtons from "./WhatsAppAlertButtons";
 import UrgencyBadge from "./UrgencyBadge";
 import ValueRow from "./ValueRow";
-import { flaggedTests } from "./reportUtils";
+import { flaggedTests, patientLine } from "./reportUtils";
 
 /**
  * The verified report card. Everything here (flags, urgency, reasons) comes from
@@ -23,12 +24,15 @@ export default function ReportCard({
   onWrongPerson,
   contacts = [],
   relationMissing = false,
+  personSex,
   onSetRelation,
   onEditPerson,
 }: {
   contacts?: AlertContact[];
   /** The family member has no relation yet: ask "Who is Shazia Bano to you?" with one-tap chips. */
   relationMissing?: boolean;
+  /** Sex on the profile, so the relation chips fit (Brother/Son for a man). */
+  personSex?: Sex;
   onSetRelation?: (relation: string) => void;
   onEditPerson?: () => void;
   report: LabReport;
@@ -62,9 +66,7 @@ export default function ReportCard({
           <UserRound size={15} aria-hidden className="shrink-0" />
           <span className={urduFont(lang)}>{t("patientOnReport", lang)}:</span>
           <bdi className="font-medium text-ink">
-            {[report.patient.name, report.patient.age, report.patient.sex === "F" ? t("sexF", lang) : report.patient.sex === "M" ? t("sexM", lang) : report.patient.sex]
-              .filter(Boolean)
-              .join(" · ")}
+            {patientLine(report.patient, lang)}
           </bdi>
           {onWrongPerson && personName && (
             <button
@@ -82,7 +84,7 @@ export default function ReportCard({
         <div className="mt-2 rounded-input bg-surface px-3 py-2">
           <p className={`text-sm font-medium ${urduFont(lang)}`}>{t("whoIsThis", lang, { name: personName })}</p>
           <div className="mt-1.5 flex flex-wrap gap-1.5">
-            {RELATIONS.slice(0, 3).map((r) => (
+            {quickRelations(personSex || parseSex(report.patient?.sex ?? "")).map((r) => (
               <button
                 key={r.value}
                 type="button"
@@ -129,7 +131,9 @@ export default function ReportCard({
       )}
 
       <p className={`mt-3 text-sm font-semibold ${urduFont(lang)}`}>
-        {flaggedCount > 0 ? t("needCare", lang, { n: flaggedCount, total }) : t("allInRange", lang, { total })}
+        {flaggedCount > 0
+          ? t(total === 1 ? "needCareOne" : "needCare", lang, { n: flaggedCount, total })
+          : t(total === 1 ? "allInRangeOne" : "allInRange", lang, { total })}
       </p>
 
       {shown.length > 0 && (
@@ -149,7 +153,7 @@ export default function ReportCard({
           onClick={() => onOpen(report.id)}
           className="mt-3 inline-flex min-h-11 w-full items-center justify-center rounded-input border px-4 text-sm font-medium transition-colors hover:bg-surface"
         >
-          <span className={urduFont(lang)}>{t("seeAll", lang, { n: total })}</span>
+          <span className={urduFont(lang)}>{total === 1 ? t("seeAllOne", lang) : t("seeAll", lang, { n: total })}</span>
         </button>
       )}
 

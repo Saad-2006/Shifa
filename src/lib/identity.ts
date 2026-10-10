@@ -1,6 +1,6 @@
 // Patient identity check: is the person on the report the family member it's being added to?
 // Pure and deterministic (no AI), so a scary result never lands on the wrong person.
-import type { ExtractedReport, IdentityConflict, PatientOnReport, Person, Sex } from "@/lib/types";
+import type { ExtractedReport, IdentityConflict, LabReport, PatientOnReport, Person, Sex } from "@/lib/types";
 
 const TITLES = new Set(["mr", "mrs", "ms", "miss", "dr", "prof", "master", "mst", "mstr", "baby", "madam"]);
 
@@ -83,22 +83,30 @@ export function isRealName(name: string): boolean {
   return tokens.length > 0 && !tokens.every((t) => RELATION_WORDS.has(t));
 }
 
-/** Age in years from "53 Year(s)", "58 Y", "53Y 4M", "5 Months", "10 Days", "53". */
+// Labs print a bracket, dash or dot between the number and the unit: "35 (Y)", "35-Yrs", "35 Y."
+const GAP = String.raw`\s*[(\[.\-]?\s*`;
+const YEARS = new RegExp(String.raw`(\d+(?:\.\d+)?)${GAP}(?:y(?:ears?|rs?)?|sal|saal)(?![a-z])`);
+const MONTHS_AFTER = new RegExp(String.raw`(\d+)${GAP}m(?:onths?|on|o)?(?![a-z])`);
+const MONTHS = new RegExp(String.raw`(\d+)${GAP}(?:months?|mons?|mo|m)(?![a-z])`);
+const DAYS = new RegExp(String.raw`(\d+)${GAP}(?:days?|d)(?![a-z])`);
+
+/** Age in years from "53 Year(s)", "35 (Y)", "58 Y", "53Y 4M", "5 Months", "10 Days", "35/M", "53". */
 export function parseAge(text: string): number | null {
   const t = (text || "").toLowerCase();
-  const y = /(\d+(?:\.\d+)?)\s*(?:y(?:ears?|rs?)?|sal|saal)(?![a-z])/.exec(t);
+  const y = YEARS.exec(t);
   if (y) {
     let v = Number(y[1]);
-    const m = /(\d+)\s*m(?:onths?|on|o)?(?![a-z])/.exec(t.slice(y.index + y[0].length));
+    const m = MONTHS_AFTER.exec(t.slice(y.index + y[0].length));
     if (m) v += Number(m[1]) / 12;
     return v;
   }
-  const mo = /(\d+)\s*(?:months?|mons?|mo|m)(?![a-z])/.exec(t);
+  // "35/M" and "35 / Male" are age/sex printed together: the number is years.
+  const lead = /^\s*(\d{1,3})\s*(?:[/|,]|$)/.exec(t);
+  if (lead) return Number(lead[1]);
+  const mo = MONTHS.exec(t);
   if (mo) return Number(mo[1]) / 12;
-  const d = /(\d+)\s*(?:days?|d)(?![a-z])/.exec(t);
-  if (d) return Number(d[1]) / 365;
-  const plain = /^\s*(\d{1,3})\s*$/.exec(t);
-  return plain ? Number(plain[1]) : null;
+  const d = DAYS.exec(t);
+  return d ? Number(d[1]) / 365 : null;
 }
 
 /** "Female" / "F" / "Mrs" / "خاتون" -> "F"; "Male" / "M" / "مرد" -> "M"; otherwise "". */
@@ -132,6 +140,33 @@ const yearsSince = (ymd: string, now: Date): number => {
   const t = Date.parse(ymd);
   return Number.isNaN(t) ? 0 : Math.max(0, (now.getTime() - t) / (365.25 * 864e5));
 };
+
+/** Age today from the age printed on a report: 35 on a Dec 2023 report is about 38 in Oct 2026. */
+export function ageNow(reportAge: number, reportDate: string, now: Date = new Date()): number {
+  return Math.round(reportAge + yearsSince(reportDate, now));
+}
+
+export interface ReportAge {
+  printed: number; // whole years as printed on the report
+  now: number; // adjusted to today
+  reportDate: string;
+}
+
+/** The age on this person's newest report that prints one (null when none does, or under 1 year). */
+export function latestReportAge(
+  reports: Pick<LabReport, "personId" | "reportDate" | "patient">[],
+  personId: string,
+  now: Date = new Date(),
+): ReportAge | null {
+  let best: ReportAge | null = null;
+  for (const r of reports) {
+    if (r.personId !== personId || !r.patient) continue;
+    const age = parseAge(r.patient.age);
+    if (age === null || age < 1 || (best && r.reportDate <= best.reportDate)) continue;
+    best = { printed: Math.floor(age), now: ageNow(age, r.reportDate, now), reportDate: r.reportDate };
+  }
+  return best;
+}
 
 /** The family member already known by this printed name, if any (avoids duplicate profiles). */
 export function findPersonByName(people: Person[], name: string): Person | undefined {

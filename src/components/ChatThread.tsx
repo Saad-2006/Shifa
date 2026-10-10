@@ -168,6 +168,7 @@ export default function ChatThread({
                       onOpen={onOpenReport}
                       personName={people.find((p) => p.id === m.personId)?.name}
                       relationMissing={!people.find((p) => p.id === m.personId)?.relation.trim()}
+                      personSex={people.find((p) => p.id === m.personId)?.sex}
                       onSetRelation={(rel) => onSetRelation(m.personId, rel)}
                       onEditPerson={() => onEditPerson(m.personId)}
                       onWrongPerson={busyMessageId || m.pendingIdentity ? undefined : () => onWrongPerson(m.id)}

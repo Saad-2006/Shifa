@@ -24,6 +24,7 @@ import { shifa, useHydrated, useShifa, type ShifaState } from "@/lib/store";
 import { useAuth } from "@/lib/useAuth";
 import { detectEmergency } from "@/lib/emergency";
 import { keywordAlertText, reportAlertText } from "@/lib/whatsapp";
+import { relationSex } from "@/lib/relations";
 
 export default function Home() {
   const hydrated = useHydrated();
@@ -286,7 +287,12 @@ function ShifaApp({ state, auth }: { state: ShifaState; auth: ReturnType<typeof 
             onResolveIdentity={(id, choice) => void chat.resolveIdentity(id, choice)}
             onWrongPerson={chat.startMove}
             contacts={contacts}
-            onSetRelation={(id, rel) => shifa.updatePerson(id, { relation: rel })}
+            onSetRelation={(id, rel) => {
+              // "Sister" also tells us the sex, if the profile doesn't have one yet.
+              const sex = relationSex(rel);
+              const unset = !people.find((p) => p.id === id)?.sex;
+              shifa.updatePerson(id, { relation: rel, ...(sex && unset ? { sex } : {}) });
+            }}
             onEditPerson={openEditPerson}
             footer={
               showFollowUps ? <FollowUpChips lang={lang} canCompare={myReports.length >= 2} onPick={ask} /> : null
