@@ -138,7 +138,7 @@ export default function ReportSheet({
                   <button
                     type="button"
                     onClick={() => onDelete(report.id)}
-                    className="inline-flex min-h-11 items-center gap-2 rounded-input bg-ink px-4 text-sm font-medium text-white hover:bg-black"
+                    className="inline-flex min-h-11 items-center gap-2 rounded-input bg-ink px-4 text-sm font-medium text-on-ink hover:bg-ink/85"
                   >
                     <Trash size={16} aria-hidden />
                     <span className={urduFont(lang)}>{t("yesDelete", lang)}</span>

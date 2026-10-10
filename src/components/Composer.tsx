@@ -168,7 +168,7 @@ export default function Composer({
         {micSupported && (
           <button
             type="button"
-            className={`${iconBtn} ${listening ? "bg-ink text-white hover:bg-ink hover:text-white" : ""}`}
+            className={`${iconBtn} ${listening ? "bg-ink text-on-ink hover:bg-ink hover:text-on-ink" : ""}`}
             onClick={toggleMic}
             disabled={busy}
             aria-pressed={listening}

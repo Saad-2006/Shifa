@@ -90,11 +90,11 @@ export default function AccessGate({ children }: { children: ReactNode }) {
   }
 
   if (state === "open") return <>{children}</>;
-  if (state === "checking") return <div className="min-h-dvh bg-white" aria-busy="true" />;
+  if (state === "checking") return <div className="min-h-dvh bg-bg" aria-busy="true" />;
 
   return (
-    <main className="flex min-h-dvh items-center justify-center bg-white px-4 text-[#18181B]">
-      <div className="w-full max-w-sm rounded-[16px] border border-[#E4E4E7] bg-white p-6">
+    <main className="flex min-h-dvh items-center justify-center bg-bg px-4 text-ink">
+      <div className="w-full max-w-sm rounded-[16px] border border-border bg-bg p-6">
         <p className="text-center text-3xl font-semibold tracking-tight">Shifa</p>
         <form onSubmit={submit} className="mt-6 flex flex-col gap-3" noValidate>
           <label htmlFor="shifa-access-code" className="text-[17px] font-medium">
@@ -114,23 +114,23 @@ export default function AccessGate({ children }: { children: ReactNode }) {
             onChange={(e) => setCode(e.target.value)}
             aria-invalid={error ? true : undefined}
             aria-describedby={error ? "shifa-access-error" : undefined}
-            className="h-12 w-full rounded-[12px] border border-[#E4E4E7] bg-white px-4 text-[17px] text-[#18181B] outline-none placeholder:text-[#71717A] focus:border-[#1A40FF] focus:ring-2 focus:ring-[#1A40FF]/20"
+            className="h-12 w-full rounded-[12px] border border-border bg-bg px-4 text-[17px] text-ink outline-none placeholder:text-muted focus:border-accent focus:ring-2 focus:ring-accent/20"
             placeholder="Access code"
           />
           {error && (
-            <p id="shifa-access-error" role="alert" className="text-[15px] text-[#B91C1C]">
+            <p id="shifa-access-error" role="alert" className="text-[15px] text-bad">
               {error}
             </p>
           )}
           <button
             type="submit"
             disabled={busy || !code.trim()}
-            className="h-12 w-full rounded-[12px] bg-[#1A40FF] text-[17px] font-medium text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+            className="h-12 w-full rounded-[12px] bg-accent text-[17px] font-medium text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {busy ? "Checking…" : "Continue"}
           </button>
         </form>
-        <p className="mt-4 text-center text-[15px] text-[#71717A]">Ask the Shifa team for the code.</p>
+        <p className="mt-4 text-center text-[15px] text-muted">Ask the Shifa team for the code.</p>
       </div>
     </main>
   );

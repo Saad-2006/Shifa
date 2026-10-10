@@ -4,14 +4,15 @@ import { useMemo } from "react";
 import { CartesianGrid, Line, LineChart, ReferenceArea, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { TrendingDown, TrendingUp, Minus } from "lucide-react";
 import { formatDate, formatMonthShort, t, urduFont } from "@/lib/i18n";
+import { useResolvedTheme } from "@/lib/theme";
 import type { Lang, TestStatus, Trend } from "@/lib/types";
 import { TONE_CLASSES, type Tone } from "./reportUtils";
 
-const INK = "#18181B";
-const MUTED = "#71717A";
-const GRID = "#E4E4E7";
-const OK = "#15803D";
-const BAD = "#B91C1C";
+// Recharts needs concrete colours (SVG attributes), so pick the palette for the theme on screen.
+const PALETTES = {
+  light: { INK: "#18181B", MUTED: "#71717A", GRID: "#E4E4E7", OK: "#15803D", BAD: "#B91C1C", BG: "#FFFFFF" },
+  dark: { INK: "#F4F4F5", MUTED: "#A1A1AA", GRID: "#2E2E33", OK: "#4ADE80", BAD: "#F87171", BG: "#18181B" },
+} as const;
 
 function statusTone(s: TestStatus): Tone {
   if (s === "normal") return "ok";
@@ -32,6 +33,7 @@ function prefersReducedMotion(): boolean {
 
 /** One analyte over time against the latest report's normal band. */
 export default function TrendChart({ trend, lang }: { trend: Trend; lang: Lang }) {
+  const { INK, MUTED, GRID, OK, BAD, BG } = PALETTES[useResolvedTheme()];
   const latest = trend.points[trend.points.length - 1];
   const refLow = latest?.refLow ?? null;
   const refHigh = latest?.refHigh ?? null;
@@ -116,7 +118,7 @@ export default function TrendChart({ trend, lang }: { trend: Trend; lang: Lang }
             />
             <Tooltip
               cursor={{ stroke: MUTED, strokeDasharray: "3 3" }}
-              contentStyle={{ borderRadius: 12, border: `1px solid ${GRID}`, fontSize: 13, color: INK }}
+              contentStyle={{ borderRadius: 12, border: `1px solid ${GRID}`, fontSize: 13, color: INK, background: BG }}
               labelFormatter={(_, payload) => {
                 const d = payload?.[0]?.payload as { date?: string } | undefined;
                 return d?.date ? formatDate(d.date, "en") : "";
@@ -136,11 +138,11 @@ export default function TrendChart({ trend, lang }: { trend: Trend; lang: Lang }
                   cy={props.cy}
                   r={4}
                   fill={props.payload?.out ? BAD : INK}
-                  stroke="#FFFFFF"
+                  stroke={BG}
                   strokeWidth={2}
                 />
               )}
-              activeDot={{ r: 6, stroke: "#FFFFFF", strokeWidth: 2, fill: INK }}
+              activeDot={{ r: 6, stroke: BG, strokeWidth: 2, fill: INK }}
             />
           </LineChart>
         </ResponsiveContainer>

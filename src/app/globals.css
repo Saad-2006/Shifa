@@ -22,6 +22,14 @@
   --color-bad-bg: #fef2f2;
   --color-emergency: #dc2626;
 
+  /* Text on ink-coloured fills (active pills, dark buttons): flips with the theme. */
+  --color-on-ink: #ffffff;
+  /* Google's sign-in button has its own light/dark styles. */
+  --color-gbtn-bg: #ffffff;
+  --color-gbtn-border: #dadce0;
+  --color-gbtn-text: #1f1f1f;
+  --color-gbtn-hover: #f8f9fa;
+
   --radius-card: 16px;
   --radius-input: 12px;
 
@@ -69,6 +77,56 @@
       opacity: 1;
       transform: translateY(-3px);
     }
+  }
+}
+
+/* Dark theme: chosen in the menu (data-theme="dark"), or the phone's setting when on "System".
+   Status colours keep their meaning (green normal, amber attention, red urgent), tuned for dark. */
+:root {
+  color-scheme: light;
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --color-bg: #0e0e10;
+  --color-surface: #18181b;
+  --color-border: #2e2e33;
+  --color-ink: #f4f4f5;
+  --color-muted: #a1a1aa;
+  --color-accent: #4466ff;
+  --color-accent-hover: #5577ff;
+  --color-ok: #4ade80;
+  --color-ok-bg: #0f2a1b;
+  --color-warn: #fbbf24;
+  --color-warn-bg: #2b2008;
+  --color-bad: #f87171;
+  --color-bad-bg: #2d1414;
+  --color-on-ink: #18181b;
+  --color-gbtn-bg: #131314;
+  --color-gbtn-border: #8e918f;
+  --color-gbtn-text: #e3e3e3;
+  --color-gbtn-hover: #1f1f21;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --color-bg: #0e0e10;
+    --color-surface: #18181b;
+    --color-border: #2e2e33;
+    --color-ink: #f4f4f5;
+    --color-muted: #a1a1aa;
+    --color-accent: #4466ff;
+    --color-accent-hover: #5577ff;
+    --color-ok: #4ade80;
+    --color-ok-bg: #0f2a1b;
+    --color-warn: #fbbf24;
+    --color-warn-bg: #2b2008;
+    --color-bad: #f87171;
+    --color-bad-bg: #2d1414;
+    --color-on-ink: #18181b;
+    --color-gbtn-bg: #131314;
+    --color-gbtn-border: #8e918f;
+    --color-gbtn-text: #e3e3e3;
+    --color-gbtn-hover: #1f1f21;
   }
 }
 
@@ -158,6 +216,22 @@
   }
   html {
     font-size: 10.5pt;
+  }
+  :root,
+  :root[data-theme="dark"] {
+    color-scheme: light;
+    --color-bg: #ffffff;
+    --color-surface: #f7f7f8;
+    --color-border: #e4e4e7;
+    --color-ink: #18181b;
+    --color-muted: #71717a;
+    --color-ok: #15803d;
+    --color-ok-bg: #f0fdf4;
+    --color-warn: #b45309;
+    --color-warn-bg: #fffbeb;
+    --color-bad: #b91c1c;
+    --color-bad-bg: #fef2f2;
+    --color-on-ink: #ffffff;
   }
   body {
     background: #ffffff;

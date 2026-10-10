@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, Noto_Nastaliq_Urdu } from "next/font/google";
 import AccessGate from "@/components/AccessGate";
 import Providers from "@/components/Providers";
+import { THEME_BOOT_SCRIPT } from "@/lib/theme";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -33,7 +34,10 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
-  themeColor: "#ffffff",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+    { media: "(prefers-color-scheme: dark)", color: "#0e0e10" },
+  ],
 };
 
 export default function RootLayout({
@@ -42,7 +46,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    // suppressHydrationWarning: the boot script may set data-theme before React hydrates.
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        {/* Static, trusted script: applies the saved theme before first paint (no white flash). */}
+        <script dangerouslySetInnerHTML={{ __html: THEME_BOOT_SCRIPT }} />
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${notoUrdu.variable} bg-bg font-sans text-ink antialiased`}
       >

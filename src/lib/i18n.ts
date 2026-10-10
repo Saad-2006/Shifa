@@ -363,6 +363,12 @@ const dict = {
   familyMember: { en: "Family member", ur: "خاندان کا فرد", roman: "Family member" },
   sexF: { en: "Female", ur: "خاتون", roman: "Female" },
   sexM: { en: "Male", ur: "مرد", roman: "Male" },
+
+  // Appearance (dark mode)
+  appearance: { en: "Appearance", ur: "ظاہری شکل", roman: "Appearance" },
+  themeSystem: { en: "System", ur: "سسٹم", roman: "System" },
+  themeLight: { en: "Light", ur: "روشن", roman: "Light" },
+  themeDark: { en: "Dark", ur: "گہرا", roman: "Dark" },
 } satisfies Record<string, Entry>;
 
 export type I18nKey = keyof typeof dict;

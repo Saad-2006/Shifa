@@ -7,6 +7,7 @@ import { buildTrends } from "@/lib/trends";
 import type { LabReport, Lang, Person, Trend } from "@/lib/types";
 import AddPersonForm, { type NewPerson } from "./AddPersonForm";
 import BackupRestore from "./BackupRestore";
+import ThemeToggle from "./ThemeToggle";
 import { Avatar } from "./PersonMenu";
 import TrendChart from "./TrendChart";
 import UrgencyBadge from "./UrgencyBadge";
@@ -187,6 +188,12 @@ export default function Sidebar({
         </section>
       )}
 
+      {/* Appearance: System / Light / Dark */}
+      <section className="border-t pt-4">
+        <SectionTitle lang={lang}>{t("appearance", lang)}</SectionTitle>
+        <ThemeToggle lang={lang} />
+      </section>
+
       {/* Backup / Restore: reports live only on this phone */}
       <section className="border-t pt-4">
         <SectionTitle lang={lang}>{t("yourData", lang)}</SectionTitle>
@@ -225,7 +232,7 @@ export default function Sidebar({
                   setConfirmReset(false);
                   onReset();
                 }}
-                className="inline-flex min-h-11 flex-1 items-center justify-center rounded-input bg-ink px-3 text-sm font-medium text-white hover:bg-black"
+                className="inline-flex min-h-11 flex-1 items-center justify-center rounded-input bg-ink px-3 text-sm font-medium text-on-ink hover:bg-ink/85"
               >
                 <span className={urduFont(lang)}>{t("yesReset", lang)}</span>
               </button>

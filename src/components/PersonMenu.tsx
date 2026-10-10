@@ -13,7 +13,7 @@ export function Avatar({ person, size = 28, active = false }: { person: Person |
       aria-hidden
       style={{ width: size, height: size, fontSize: Math.round(size * 0.45) }}
       className={`inline-flex shrink-0 items-center justify-center rounded-full font-semibold ${
-        active ? "bg-ink text-white" : "border bg-surface text-ink"
+        active ? "bg-ink text-on-ink" : "border bg-surface text-ink"
       }`}
     >
       {initialOf(person)}
