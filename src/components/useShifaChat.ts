@@ -4,7 +4,7 @@
 // flags and urgency come from checkReport() in code, and the emergency banner is
 // raised by code (keywords, danger values) before any AI reply.
 
-import { useCallback, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { apiFetch } from "@/lib/apiClient";
 import { SAMPLE_EXTRACTION } from "@/lib/demoData";
 import { detectEmergency, EMERGENCY_SENTINEL } from "@/lib/emergency";
@@ -156,11 +156,12 @@ function reportsForRequest(personId: string, focusId?: string): LabReport[] {
 
 /**
  * POST /api/chat and stream the reply into an assistant message.
- * - A leading EMERGENCY_SENTINEL line is stripped and raises the banner.
+ * - A leading EMERGENCY_SENTINEL line (sent only when code flagged an emergency) is stripped
+ *   and marks the message; the calm urgent card in the chat is decided by code, not this.
  * - `x-shifa-offline: 1` marks the message as an offline answer.
  * - Store updates are throttled to ~60ms.
  */
-export async function streamChat(req: ChatRequest, messageId: string, onEmergency: () => void): Promise<void> {
+export async function streamChat(req: ChatRequest, messageId: string): Promise<void> {
   let res: Response;
   try {
     res = await apiFetch("/api/chat", {
@@ -173,10 +174,7 @@ export async function streamChat(req: ChatRequest, messageId: string, onEmergenc
   }
   if (!res.ok || !res.body) throw new FlowError(await readErrorCode(res));
   if (res.headers.get("x-shifa-offline") === "1") shifa.updateMessage(messageId, { offline: true });
-  if (res.headers.get("x-shifa-emergency") === "1") {
-    onEmergency();
-    shifa.updateMessage(messageId, { emergency: true });
-  }
+  if (res.headers.get("x-shifa-emergency")) shifa.updateMessage(messageId, { emergency: true });
 
   const reader = res.body.getReader();
   const decoder = new TextDecoder();
@@ -197,7 +195,6 @@ export async function streamChat(req: ChatRequest, messageId: string, onEmergenc
     sentinelChecked = true;
     if (raw.startsWith(EMERGENCY_SENTINEL)) {
       raw = raw.slice(EMERGENCY_SENTINEL.length);
-      onEmergency();
       shifa.updateMessage(messageId, { emergency: true });
     }
   };
@@ -228,11 +225,7 @@ export async function streamChat(req: ChatRequest, messageId: string, onEmergenc
 export function useShifaChat() {
   const [busyMessageId, setBusyMessageId] = useState<string | null>(null);
   const [scan, setScan] = useState<ScanState | null>(null);
-  const [emergency, setEmergency] = useState(false);
   const busyRef = useRef(false);
-
-  const raiseEmergency = useCallback(() => setEmergency(true), []);
-  const dismissEmergency = useCallback(() => setEmergency(false), []);
 
   const begin = () => {
     if (busyRef.current) return false;
@@ -356,7 +349,6 @@ export function useShifaChat() {
       ...(offline ? { offline: true } : {}),
       ...(isEmergency ? { emergency: true } : {}),
     });
-    if (isEmergency) setEmergency(true);
     setScan({ messageId, step: 2 });
     await explainInto(personId, report.id, messageId, lang);
   };
@@ -384,7 +376,6 @@ export function useShifaChat() {
           focusReportId: reportId,
         },
         messageId,
-        raiseEmergency,
       );
     } catch (e) {
       const c = e instanceof FlowError ? e.code : "other";
@@ -488,7 +479,6 @@ export function useShifaChat() {
       } catch {
         isEmergency = false;
       }
-      if (isEmergency) setEmergency(true);
       shifa.addMessage({ personId: person.id, role: "user", text, ...(isEmergency ? { emergency: true } : {}) });
       const placeholder = shifa.addMessage({
         personId: person.id,
@@ -512,7 +502,6 @@ export function useShifaChat() {
       await streamChat(
         { lang, person: freshPerson(person), reports: reportsForRequest(person.id), messages: history, task: "chat" },
         placeholder.id,
-        raiseEmergency,
       );
     } catch (e) {
       if (!(e instanceof FlowError)) console.error("[shifa] chat flow failed", e);
@@ -527,9 +516,6 @@ export function useShifaChat() {
     busy: busyMessageId !== null,
     busyMessageId,
     scan,
-    emergency,
-    raiseEmergency,
-    dismissEmergency,
     sendText,
     scanFile,
     runSample,

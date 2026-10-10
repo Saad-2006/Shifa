@@ -11,7 +11,7 @@
 
 | Report card (checked by code) | Emergency detection | Urdu (mobile) |
 |---|---|---|
-| ![Report card](docs/screenshots/report-card.png) | ![Emergency banner](docs/screenshots/emergency.png) | ![Urdu answer](docs/screenshots/mobile-urdu.png) |
+| ![Report card](docs/screenshots/report-card.png) | ![Urgent card](docs/screenshots/emergency.png) | ![Urdu answer](docs/screenshots/mobile-urdu.png) |
 
 | Wrong person? Asked before adding | Dark mode | WhatsApp alert (code-decided emergency) |
 |---|---|---|
@@ -25,7 +25,7 @@
 | Flag each value low/high, detect danger values, set urgency | `src/lib/labRules.ts` (deterministic code) | Numbers and safety thresholds must never be guessed |
 | Show the report card | Code | What you see was checked, not generated |
 | Explain, answer questions, Urdu/Roman Urdu | Gemini (streaming), grounded only in this person's reports | AI is good at kind, simple language |
-| Detect emergencies ("seenay mein dard", "saans nahi aa rahi") | Keyword + fuzzy matching in code **and** an AI flag | Either one shows a red banner with **1122** and **Edhi 115** |
+| Detect emergencies ("seenay mein dard", "saans nahi aa rahi") | Keyword + fuzzy matching in code (the AI alone can't raise one) | A calm card in the chat: **Tell family on WhatsApp** first, plus one **Call 1122** button. Danger values on a report say "get checked today, or the ER if unwell", with no 1122 |
 
 The AI is told the flags were computed by code and must never override them.
 

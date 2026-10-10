@@ -109,11 +109,6 @@ const dict = {
   stop: { en: "Stop", ur: "روکیں", roman: "Rokein" },
   typing: { en: "Shifa is writing", ur: "شفا لکھ رہی ہے", roman: "Shifa likh rahi hai" },
   reportDeleted: { en: "This report was deleted.", ur: "یہ رپورٹ مٹا دی گئی ہے۔", roman: "Ye report mita di gayi hai." },
-  emergencyInline: {
-    en: "Possible emergency. Call 1122 now.",
-    ur: "ممکنہ ایمرجنسی۔ ابھی 1122 پر کال کریں۔",
-    roman: "Mumkina emergency. Abhi 1122 par call karein.",
-  },
   suggested: { en: "Suggested questions", ur: "تجویز کردہ سوالات", roman: "Mashwara sawalat" },
 
   // Follow-up chips
@@ -184,16 +179,16 @@ const dict = {
   },
 
   // Urgency
-  urgEmergency: { en: "Emergency", ur: "ایمرجنسی", roman: "Emergency" },
+  urgEmergency: { en: "Urgent", ur: "فوری", roman: "Fori" },
   urgSoon: { en: "See a doctor soon", ur: "جلد ڈاکٹر کو دکھائیں", roman: "Jald doctor ko dikhayein" },
   // Short form for small badges (report lists), so the pill never overflows on a phone.
   urgSoonShort: { en: "Doctor soon", ur: "جلد ڈاکٹر", roman: "Jald doctor" },
   urgRoutine: { en: "Not urgent", ur: "فوری نہیں", roman: "Fori nahi" },
   urgNormal: { en: "Normal", ur: "نارمل", roman: "Normal" },
   actEmergency: {
-    en: "Go to emergency / call 1122 now",
-    ur: "ابھی ایمرجنسی جائیں / 1122 پر کال کریں",
-    roman: "Abhi emergency jayein / 1122 par call karein",
+    en: "Get checked by a doctor today",
+    ur: "آج ہی ڈاکٹر سے چیک کروائیں",
+    roman: "Aaj hi doctor se check karwayein",
   },
   actSoon: { en: "See a doctor this week", ur: "اس ہفتے ڈاکٹر کو دکھائیں", roman: "Is hafte doctor ko dikhayein" },
   actRoutine: {
@@ -254,20 +249,6 @@ const dict = {
   yesDelete: { en: "Yes, delete", ur: "ہاں، مٹائیں", roman: "Haan, mitayein" },
   whyUrgency: { en: "Why this urgency", ur: "فوری ہونے کی وجہ", roman: "Urgency ki wajah" },
   otherTests: { en: "Other tests", ur: "دیگر ٹیسٹ", roman: "Doosre tests" },
-
-  // Emergency banner
-  emTitle: {
-    en: "This could be an emergency. Call 1122 now.",
-    ur: "یہ ایمرجنسی ہو سکتی ہے۔ ابھی 1122 پر کال کریں۔",
-    roman: "Ye emergency ho sakti hai. Abhi 1122 par call karein.",
-  },
-  emSub: {
-    en: "Do not wait for a reply here. Go to the nearest hospital emergency.",
-    ur: "یہاں جواب کا انتظار نہ کریں۔ قریبی ہسپتال کی ایمرجنسی جائیں۔",
-    roman: "Yahan jawab ka intezar na karein. Qareebi hospital ki emergency jayein.",
-  },
-  emCall: { en: "Call {label}", ur: "{label} کو کال کریں", roman: "{label} ko call karein" },
-  emDismiss: { en: "I'm safe, dismiss", ur: "میں محفوظ ہوں، بند کریں", roman: "Main mehfooz hoon, band karein" },
 
   // Account (Google sign-in)
   account: { en: "Account", ur: "اکاؤنٹ", roman: "Account" },
@@ -374,8 +355,8 @@ const dict = {
   themeDark: { en: "Dark", ur: "گہرا", roman: "Dark" },
 
   // WhatsApp alerts (only for emergencies decided by code). The message goes to a relative who
-  // may be far away, so it is calm and cautious; the 1122 / Edhi call buttons stay in the app's
-  // red banner for the person on the spot.
+  // may be far away, so it is calm and cautious. In the app, a single "Call 1122" button shows
+  // only for typed emergencies (chest pain, fainting...), never for a report.
   waAlertTitle: { en: "🩺 Shifa health note: {name}", ur: "🩺 شفا صحت نوٹ: {name}", roman: "🩺 Shifa health note: {name}" },
   waAlertReport: {
     en: "{name}'s lab report ({lab}) has a result Shifa's checks mark as urgent:",
@@ -407,8 +388,21 @@ const dict = {
   waCatPoisoning: { en: "poisoning / overdose", ur: "زہر / زیادہ دوا", roman: "zeher / zyada dawai" },
   waCatAllergy: { en: "severe allergic reaction", ur: "شدید الرجی", roman: "shadeed allergy" },
   waCatOther: { en: "emergency signs", ur: "ایمرجنسی علامات", roman: "emergency alamaat" },
-  waSend: { en: "Send WhatsApp alert", ur: "واٹس ایپ الرٹ بھیجیں", roman: "WhatsApp alert bhejein" },
+  waSend: { en: "Tell family on WhatsApp", ur: "گھر والوں کو واٹس ایپ کریں", roman: "Ghar walon ko WhatsApp karein" },
   waSendTo: { en: "WhatsApp {name}", ur: "{name} کو واٹس ایپ", roman: "{name} ko WhatsApp" },
+  // Calm urgent card (no ambulance popup): WhatsApp to family is the main action.
+  urgentReportBody: {
+    en: "Some values are at a danger level. Let the family know, and go to the ER if {name} feels unwell.",
+    ur: "کچھ ویلیوز خطرناک حد پر ہیں۔ گھر والوں کو بتا دیں، اور {name} کی طبیعت خراب ہو تو ای آر لے جائیں۔",
+    roman: "Kuch values khatarnak level par hain. Ghar walon ko bata dein, aur {name} ki tabiyat kharab ho to ER le jaein.",
+  },
+  urgentWordsTitle: { en: "This could be serious", ur: "یہ سنجیدہ ہو سکتا ہے", roman: "Ye serious ho sakta hai" },
+  urgentWordsBody: {
+    en: "Let the family know now. If it is happening right now, go to the nearest ER or call 1122.",
+    ur: "ابھی گھر والوں کو بتا دیں۔ اگر ابھی ہو رہا ہے تو قریبی ای آر جائیں یا 1122 پر کال کریں۔",
+    roman: "Abhi ghar walon ko bata dein. Agar abhi ho raha hai to qareebi ER jaein ya 1122 par call karein.",
+  },
+  call1122: { en: "Call 1122", ur: "1122 پر کال کریں", roman: "1122 par call karein" },
   alertContacts: { en: "Family alert numbers", ur: "فیملی الرٹ نمبر", roman: "Family alert numbers" },
   alertContactsHint: {
     en: "In an emergency, Shifa opens WhatsApp with a ready alert to these numbers; you tap Send. Saved only on this phone.",

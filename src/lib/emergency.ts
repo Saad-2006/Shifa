@@ -1,8 +1,8 @@
 // Emergency detector: keyword + fuzzy matching in English, Roman Urdu and Urdu script.
-// Pure and isomorphic (browser and Node). No network, no AI: the chat API adds an AI
-// flag on top (EMERGENCY_SENTINEL), but this runs first and instantly on the user's text.
+// Pure and isomorphic (browser and Node). No network, no AI: only this detector (typed words) and
+// labRules (danger values) can raise the in-app urgent card; the AI alone never can.
 //
-// Design bias: a missed emergency is far worse than an extra red banner, so negation
+// Design bias: a missed emergency is far worse than an extra urgent card, so negation
 // handling is deliberately narrow ("no chest pain", "... dard nahi hai", "risk of stroke").
 import Fuse from "fuse.js";
 
@@ -26,10 +26,11 @@ export interface EmergencyResult {
 
 export const EMERGENCY_SENTINEL = "[[EMERGENCY]]";
 
-export const EMERGENCY_CONTACTS: { name: string; number: string; note: string }[] = [
-  { name: "Rescue 1122", number: "1122", note: "Emergency ambulance service" },
-  { name: "Edhi Ambulance", number: "115", note: "Nationwide ambulance" },
-];
+/** Why the urgent card shows: emergency words typed in the chat, or danger values on a report. */
+export type EmergencyKind = "words" | "report";
+
+/** The one number shown, and only for typed emergencies ("Abbu behosh ho gaye"). */
+export const RESCUE_NUMBER = "1122";
 
 /** Most severe first. When several categories match, the earliest one wins. */
 const SEVERITY: EmergencyCategory[] = [
@@ -338,8 +339,9 @@ function osa(a: string, b: string): number {
 
 /**
  * Word-by-word guard on a fuzzy candidate: same first letter, ≤3-letter words exact,
- * 1 typo for 4–6 letters, 2 for longer, at most 2 typos overall. Stops "pet mein dard"
- * (stomach) matching "seenay mein dard" and "no breathing" matching "not breathing".
+ * 1 typo for 4–6 letters, 2 for longer, at most 2 typos overall (1 for a one-word phrase).
+ * Stops "pet mein dard" (stomach) matching "seenay mein dard", "no breathing" matching
+ * "not breathing", and "kidney failing" matching "fainting".
  */
 function wordsAgree(win: string[], phrase: string[]): boolean {
   if (win.length !== phrase.length) return false;
@@ -354,7 +356,7 @@ function wordsAgree(win: string[], phrase: string[]): boolean {
     if (dist > allowed) return false;
     total += dist;
   }
-  return total > 0 && total <= 2;
+  return total > 0 && total <= (phrase.length === 1 ? 1 : 2);
 }
 
 function isNegated(words: string[], start: number, end: number): boolean {

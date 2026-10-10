@@ -6,7 +6,7 @@ import type { AlertContact, LabReport, Lang, Sex } from "@/lib/types";
 import { parseSex } from "@/lib/identity";
 import { quickRelations } from "@/lib/relations";
 import { reportAlertText } from "@/lib/whatsapp";
-import WhatsAppAlertButtons from "./WhatsAppAlertButtons";
+import UrgentCard from "./UrgentCard";
 import UrgencyBadge from "./UrgencyBadge";
 import ValueRow from "./ValueRow";
 import { flaggedTests, patientLine } from "./reportUtils";
@@ -113,7 +113,7 @@ export default function ReportCard({
 
       {report.urgency === "emergency" && personName && (
         <div className="mt-2">
-          <WhatsAppAlertButtons text={reportAlertText(report, personName, lang)} contacts={contacts} lang={lang} />
+          <UrgentCard kind="report" personName={personName} alertText={reportAlertText(report, personName, lang)} contacts={contacts} lang={lang} />
         </div>
       )}
 

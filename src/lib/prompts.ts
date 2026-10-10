@@ -181,7 +181,7 @@ export function coerceExtraction(raw: unknown): ExtractedReport {
 // ================================================================ chat
 
 export const URGENCY_LABEL: Record<Urgency, string> = {
-  emergency: "EMERGENCY NOW: go to emergency / call 1122",
+  emergency: "Danger level: get checked by a doctor today, or the ER if they feel unwell",
   soon: "See a doctor this week",
   routine: "Mention at the next regular doctor visit",
   normal: "Normal: nothing urgent",
@@ -334,6 +334,8 @@ export function buildChatSystem(o: ChatSystemInput): string {
   const focus = pickFocusReport(reports, focusReportId);
   const who = cell(person.name, 40) || "this person";
   const S = EMERGENCY_SENTINEL;
+  // Only code raises an emergency: danger values when explaining a report, or the word detector.
+  const reportEmergency = task === "explain_report" && focus?.urgency === "emergency";
 
   const lines: string[] = [
     `You are Shifa, a caring, calm helper who explains medical lab reports to Pakistani families in simple words, like a kind family member who works in healthcare. You are talking with the family about ${who}${person.relation ? ` (${cell(person.relation, 30)})` : ""}. If the relation is "Self", the user is the patient: say "your".`,
@@ -352,22 +354,22 @@ export function buildChatSystem(o: ChatSystemInput): string {
     "11. A value marked NOT CHECKED (status unknown, no normal range) was not checked by code. NEVER call it normal or include it in 'all other values are normal'. Say the report printed no normal range for it and that the doctor should interpret it.",
     "12. If a range is marked 'standard range: report printed none', say it is the usual standard range because the report did not print one.",
     "",
-    "EMERGENCY RULE",
-    `If the user's latest message suggests a possible emergency (chest pain, breathing trouble, stroke signs such as face drooping, arm weakness or slurred speech, unconsciousness or fainting, seizure/fits, heavy bleeding, suicidal thoughts or self-harm, poisoning or overdose, severe allergic reaction with face/throat swelling)${focus?.urgency === "emergency" ? ", or the FOCUS report's urgency is emergency" : ""}:`,
-    `- The very first line of your reply must be exactly ${S} and nothing else on that line.`,
-    "- The next line says to call 1122 (Rescue) or go to the nearest hospital emergency department now, before anything else.",
-    "- Then stay brief and calm.",
-    `Never write ${S} in any other situation.`,
+    "URGENT SITUATIONS (be calm and caring, never alarming)",
+    "- If the user's latest message describes a possible emergency happening now (chest pain, breathing trouble, stroke signs such as face drooping, arm weakness or slurred speech, unconsciousness or fainting, seizure/fits, heavy bleeding, suicidal thoughts or self-harm, poisoning or overdose, severe allergic reaction with face/throat swelling), your first sentence gently says: if this is happening now, call 1122 or go to the nearest hospital emergency. Then stay brief and calm.",
+    "- A report with danger-level values is urgent but not an ambulance call: say calmly to get them checked by a doctor today, or taken to the ER if they feel unwell. Never tell them to call 1122 because of a report.",
+    `- Write ${S} only when an IMPORTANT line below tells you to, as the very first line with nothing else on it. Never write it otherwise.`,
   ];
 
-  if (focus?.urgency === "emergency") {
+  if (reportEmergency) {
     lines.push(
-      `IMPORTANT: Shifa's code marked the FOCUS report (${cell(focus.reportDate, 12) || "latest"}) as EMERGENCY, so this reply MUST start with the ${S} line and the 1122 advice, then continue.`,
+      `IMPORTANT: Shifa's code found danger-level values in the FOCUS report (${cell(focus?.reportDate, 12) || "latest"}), so this reply MUST start with the ${S} line, then one calm line: get ${who} checked by a doctor today, or taken to the ER if they feel unwell. Then continue.`,
     );
+  } else if (focus?.urgency === "emergency" && !emergencyDetected) {
+    lines.push(`Note: the FOCUS report has danger-level values. If it fits the question, calmly remind them to get ${who} checked by a doctor today (ER if unwell). Do not write ${S}.`);
   }
   if (emergencyDetected) {
     lines.push(
-      `IMPORTANT: Shifa's emergency detector flagged the user's latest message, so this reply MUST start with the ${S} line and the 1122 advice. Keep the rest to 2-3 short calm sentences.`,
+      `IMPORTANT: Shifa's emergency detector flagged the user's latest message, so this reply MUST start with the ${S} line, then one calm line: if this is happening now, call 1122 or go to the nearest hospital emergency. Keep the rest to 2-3 short calm sentences.`,
     );
   }
 
@@ -378,7 +380,7 @@ export function buildChatSystem(o: ChatSystemInput): string {
       "TASK: explain the FOCUS report. Use this structure (keep the whole reply under about 230 words):",
       "1. Overview: 1-2 lines on what the report shows and how many values are outside the normal range (use the exact count given in the data).",
       "2. Values that need attention: one bullet for each 'well outside or danger level' value (danger first). Each: name, value with unit vs the normal range, and a short plain meaning. Then ONE line naming every 'slightly outside' value with its number and normal range. If none are flagged, say all values are in the normal range.",
-      `3. What to do next, matching the report's urgency exactly: emergency = call 1122 / go to emergency now; soon = see a doctor this week; routine = mention it at the next regular visit; normal = nothing urgent, keep regular check-ups.${focus ? ` This report's urgency is "${focus.urgency}".` : ""}`,
+      `3. What to do next, matching the report's urgency exactly: emergency = get checked by a doctor today, or the ER if they feel unwell (not an ambulance call); soon = see a doctor this week; routine = mention it at the next regular visit; normal = nothing urgent, keep regular check-ups.${focus ? ` This report's urgency is "${focus.urgency}".` : ""}`,
       "4. 2-3 short questions to ask the doctor, as bullets.",
       "5. One closing line saying Shifa helps you understand the report but does not replace a doctor.",
     );

@@ -28,11 +28,11 @@ Generic chatbots are not the answer. They can misread numbers, invent values, or
 2. **Checks every value with verified rules, not AI:**
    - Deterministic code compares each value with the report's own printed range.
    - It checks a list of danger values (e.g. potassium, sodium, haemoglobin, glucose, platelets).
-   - It assigns an urgency: **Emergency now / See a doctor this week / Mention at next visit / Normal**.
+   - It assigns an urgency: **Urgent: get checked today / See a doctor this week / Mention at next visit / Normal**.
 3. **Shows a verified report card** with the urgency and the values that need attention, each on a simple range bar.
 4. **Explains it in the family's language,** English, Urdu or Roman Urdu. The explanation is grounded only in that person's reports, and it can't override the code's flags.
 5. **Answers follow-up questions** in the same chat ("Kya ye serious hai?", "Doctor se kya poochein?") and compares results over time.
-6. **Detects emergencies.** Hybrid keyword and AI detection, in English, Urdu and Roman Urdu, shows a full-screen banner to call Rescue 1122 / Edhi 115.
+6. **Handles emergencies calmly.** Code detects emergency words in English, Urdu and Roman Urdu, and danger values on reports. It shows a calm card in the chat whose main button sends a ready WhatsApp message to the family. Typed emergencies (chest pain, fainting) also get one "Call 1122" button. The AI alone can never raise an emergency.
 7. **Prepares a one-page Doctor Summary** to print or share, so the consultation starts with the facts.
 
 **Design principle: the AI reads and explains; code decides.** Every number shown is extracted from the report, and every flag and urgency level comes from code. The AI never decides what is dangerous.
@@ -64,7 +64,7 @@ Generic chatbots are not the answer. They can misread numbers, invent values, or
 |---|---|---|
 | Report scanning (photo or PDF) in chat | Transcribes tests, values, units, ranges | Flags values, checks danger values, sets urgency, builds the report card |
 | Explanations and follow-up chat | Explains in English / Urdu / Roman Urdu, grounded in the person's own reports | Supplies the verified flags, which the AI can't override |
-| Emergency detection | Flags emergencies in its replies | Keyword and fuzzy matching in three languages triggers the 1122 banner |
+| Emergency detection | Writes the calm advice in the reply | Keyword and fuzzy matching in three languages, and danger values, decide when the urgent card (WhatsApp to family, plus 1122 for typed emergencies) appears |
 | Patient identity check | Reads the patient's name, age and sex from the report | Compares them with the chosen family member. On a mismatch, nothing is added until the user confirms whose report it is |
 | WhatsApp alert | – | For code-decided emergencies only (a danger value, or emergency words): one tap opens WhatsApp with a code-written alert to a saved family number |
 | Dark mode | – | System / Light / Dark themes, readable in all three languages |
@@ -124,5 +124,5 @@ Generic chatbots are not the answer. They can misread numbers, invent values, or
 - **Built for Pakistan:**
   - Urdu (right-to-left) and Roman Urdu as people actually type them.
   - Pakistani report formats, lakh-style numbers ("1,50,000").
-  - Rescue 1122 and Edhi 115.
+  - One-tap WhatsApp alerts to family, and Rescue 1122 for emergencies happening right now.
 - **Sustainability:** free for families; a paid version for labs and clinics to send patients pre-explained reports.
