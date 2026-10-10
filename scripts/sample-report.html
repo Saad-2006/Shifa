@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Sample Lab Report</title>
+<!--
+  FICTIONAL sample lab report for the Shifa demo. Values must stay identical to
+  SAMPLE_EXTRACTION in src/lib/demoData.ts. Render to PNG with:
+  "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless=new --disable-gpu --hide-scrollbars \
+    --screenshot=<abs>/public/samples/sample-report.png --window-size=1240,1754 file://<abs>/scripts/sample-report.html
+-->
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: #ffffff; }
+  body {
+    width: 1240px; height: 1754px; overflow: hidden; position: relative;
+    font-family: Arial, Helvetica, sans-serif; color: #1a1a1a; font-size: 21px;
+  }
+  .page { position: relative; padding: 46px 72px 0; height: 100%; }
+  .watermark {
+    position: absolute; left: 50%; top: 52%; transform: translate(-50%, -50%) rotate(-30deg);
+    font-size: 230px; font-weight: 800; letter-spacing: 24px; color: #c62828; opacity: 0.07;
+    white-space: nowrap; pointer-events: none; z-index: 0;
+  }
+  .content { position: relative; z-index: 1; }
+  .banner {
+    border: 3px dashed #c62828; color: #b71c1c; background: #fff5f5; text-align: center;
+    font-weight: 700; font-size: 24px; padding: 10px 12px; letter-spacing: 0.5px; border-radius: 6px;
+  }
+  header { display: flex; align-items: center; gap: 26px; padding: 24px 0 18px; border-bottom: 4px solid #0f5f6b; }
+  .logo {
+    width: 96px; height: 96px; border-radius: 50%; background: #0f5f6b; color: #fff; flex: none;
+    display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 38px;
+  }
+  .lab h1 { margin: 0; font-size: 44px; color: #0f5f6b; letter-spacing: 0.3px; }
+  .lab .tag { margin-top: 4px; font-size: 20px; color: #444; font-weight: 600; }
+  .lab .addr { margin-top: 6px; font-size: 18px; color: #555; }
+  .title {
+    text-align: center; margin: 20px 0 14px; font-size: 26px; font-weight: 800; letter-spacing: 3px; color: #222;
+  }
+  .patient {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 8px 40px; border: 2px solid #9aa7ab;
+    border-radius: 6px; padding: 16px 22px; font-size: 20px; background: #f7fafa;
+  }
+  .patient div span { display: inline-block; min-width: 170px; color: #555; }
+  .patient b { color: #111; }
+  table { width: 100%; border-collapse: collapse; margin-top: 22px; font-size: 21px; }
+  thead th {
+    background: #0f5f6b; color: #fff; text-align: left; padding: 11px 14px; font-size: 20px;
+    letter-spacing: 0.4px;
+  }
+  thead th.c, td.c { text-align: center; }
+  tbody td { padding: 9px 14px; border-bottom: 1px solid #d9e0e2; }
+  tr.panel td {
+    background: #e6eff1; font-weight: 800; color: #0f5f6b; font-size: 19px; letter-spacing: 1px;
+    padding: 8px 14px; border-bottom: 1px solid #b8c8cc; text-transform: uppercase;
+  }
+  td.res { font-weight: 700; }
+  tr.abn td.res, tr.abn td.flag { color: #b71c1c; }
+  td.flag { font-weight: 800; }
+  .end { text-align: center; margin: 22px 0 0; font-size: 18px; color: #555; letter-spacing: 2px; }
+  .notes { margin-top: 14px; font-size: 17px; color: #555; line-height: 1.45; }
+  .sigs { display: flex; justify-content: space-between; margin-top: 60px; padding: 0 10px; }
+  .sig { width: 400px; text-align: center; font-size: 19px; }
+  .sig .scribble { font-family: "Brush Script MT", "Snell Roundhand", cursive; font-size: 34px; color: #2b3a8c; height: 44px; }
+  .sig .line { border-top: 2px solid #333; margin-top: 6px; padding-top: 8px; font-weight: 700; }
+  .sig .sub { color: #555; font-size: 17px; margin-top: 2px; }
+  footer {
+    position: absolute; left: 72px; right: 72px; bottom: 34px; border-top: 2px solid #0f5f6b;
+    padding-top: 12px; font-size: 17px; color: #555; display: flex; justify-content: space-between;
+  }
+  footer .warn { color: #b71c1c; font-weight: 700; }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="watermark">SAMPLE</div>
+  <div class="content">
+    <div class="banner">SAMPLE: fictional report for demonstration &nbsp;&middot;&nbsp; not a real patient or laboratory</div>
+
+    <header>
+      <div class="logo">SD</div>
+      <div class="lab">
+        <h1>Shifa Demo Diagnostics (sample)</h1>
+        <div class="tag">Clinical Laboratory &amp; Diagnostic Services</div>
+        <div class="addr">Plot 00, Sample Road, Demo Town, Lahore &nbsp;|&nbsp; Tel: 000-0000000 &nbsp;|&nbsp; demo@example.invalid</div>
+      </div>
+    </header>
+
+    <div class="title">LABORATORY TEST REPORT</div>
+
+    <div class="patient">
+      <div><span>Patient Name:</span><b>Sample Patient</b></div>
+      <div><span>Lab No:</span><b>DEMO-0001</b></div>
+      <div><span>Age / Sex:</span><b>58 Years / Female</b></div>
+      <div><span>Sample Collected:</span><b>08-Oct-2026 08:45 AM</b></div>
+      <div><span>Referred By:</span><b>Dr. Demo Physician</b></div>
+      <div><span>Report Date:</span><b>08-Oct-2026 02:30 PM</b></div>
+      <div><span>Specimen:</span><b>Blood (EDTA) / Serum</b></div>
+      <div><span>Status:</span><b>Final</b></div>
+    </div>
+
+    <table>
+      <thead>
+        <tr><th style="width:38%">Test</th><th style="width:13%">Result</th><th style="width:15%">Unit</th><th style="width:22%">Reference Range</th><th class="c" style="width:12%">Flag</th></tr>
+      </thead>
+      <tbody>
+        <tr class="panel"><td colspan="5">Complete Blood Count (CBC)</td></tr>
+        <tr class="abn"><td>Haemoglobin (Hb)</td><td class="res">10.6</td><td>g/dL</td><td>12.0 - 15.5</td><td class="c flag">L</td></tr>
+        <tr><td>Total Leucocyte Count (TLC)</td><td class="res">7.2</td><td>&times;10&#8313;/L</td><td>4.0 - 11.0</td><td class="c flag"></td></tr>
+        <tr><td>Platelet Count</td><td class="res">245</td><td>&times;10&#8313;/L</td><td>150 - 450</td><td class="c flag"></td></tr>
+        <tr class="abn"><td>RBC Count</td><td class="res">4.0</td><td>&times;10&sup1;&sup2;/L</td><td>4.2 - 5.4</td><td class="c flag">L</td></tr>
+        <tr class="abn"><td>MCV</td><td class="res">76</td><td>fL</td><td>80 - 100</td><td class="c flag">L</td></tr>
+
+        <tr class="panel"><td colspan="5">Diabetes Profile</td></tr>
+        <tr class="abn"><td>Glucose Fasting</td><td class="res">156</td><td>mg/dL</td><td>70 - 100</td><td class="c flag">H</td></tr>
+        <tr class="abn"><td>HbA1c</td><td class="res">7.4</td><td>%</td><td>4.0 - 5.6</td><td class="c flag">H</td></tr>
+
+        <tr class="panel"><td colspan="5">Kidney &amp; Liver Function</td></tr>
+        <tr><td>Serum Creatinine</td><td class="res">1.0</td><td>mg/dL</td><td>0.6 - 1.1</td><td class="c flag"></td></tr>
+        <tr><td>ALT (SGPT)</td><td class="res">28</td><td>U/L</td><td>0 - 35</td><td class="c flag"></td></tr>
+
+        <tr class="panel"><td colspan="5">Thyroid Function</td></tr>
+        <tr><td>TSH</td><td class="res">2.1</td><td>&micro;IU/mL</td><td>0.4 - 4.0</td><td class="c flag"></td></tr>
+
+        <tr class="panel"><td colspan="5">Lipid Profile</td></tr>
+        <tr class="abn"><td>Total Cholesterol</td><td class="res">212</td><td>mg/dL</td><td>&lt; 200</td><td class="c flag">H</td></tr>
+
+        <tr class="panel"><td colspan="5">Vitamins</td></tr>
+        <tr class="abn"><td>Vitamin D (25-OH)</td><td class="res">14</td><td>ng/mL</td><td>30 - 100</td><td class="c flag">L</td></tr>
+      </tbody>
+    </table>
+
+    <div class="end">*** End of Report ***</div>
+    <div class="notes">
+      H = above reference range, L = below reference range. Results should be interpreted by a qualified doctor
+      together with the clinical history. This document is a fictional sample made to demonstrate the Shifa app.
+    </div>
+
+    <div class="sigs">
+      <div class="sig">
+        <div class="scribble">S. Demo</div>
+        <div class="line">Lab Technologist</div>
+        <div class="sub">(sample signature)</div>
+      </div>
+      <div class="sig">
+        <div class="scribble">A. Demo</div>
+        <div class="line">Dr. A. Demo, Consultant Pathologist</div>
+        <div class="sub">(fictional, for demonstration)</div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <div class="warn">SAMPLE: fictional report for demonstration</div>
+    <div>Page 1 of 1</div>
+  </footer>
+</div>
+</body>
+</html>

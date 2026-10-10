@@ -1,0 +1,10 @@
+{
+  "_help": "Copy to eval/labels/<same name as the report file>.json. One entry per result row you want scored. value is required (as printed, or a number). unit, refLow, refHigh and flag are optional; flag is H, L or N (what a doctor would mark). Omit refLow/refHigh to skip range scoring for that row; use null for an open side, e.g. '< 200' is refLow null, refHigh 200.",
+  "tests": [
+    { "name": "Haemoglobin", "value": "10.6", "unit": "g/dL", "refLow": 12.0, "refHigh": 15.5, "flag": "L" },
+    { "name": "Total Leucocyte Count", "value": "7,800", "unit": "/cumm", "refLow": 4000, "refHigh": 11000, "flag": "N" },
+    { "name": "Platelet Count", "value": "1,50,000", "unit": "/cumm", "refLow": 150000, "refHigh": 450000, "flag": "N" },
+    { "name": "HbA1c", "value": 7.4, "unit": "%", "refLow": null, "refHigh": 5.7, "flag": "H" },
+    { "name": "Urine Sugar", "value": "Nil" }
+  ]
+}

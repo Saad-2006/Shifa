@@ -1,0 +1,150 @@
+"use client";
+
+import { useMemo } from "react";
+import { CartesianGrid, Line, LineChart, ReferenceArea, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { TrendingDown, TrendingUp, Minus } from "lucide-react";
+import { formatDate, formatMonthShort, t, urduFont } from "@/lib/i18n";
+import type { Lang, TestStatus, Trend } from "@/lib/types";
+import { TONE_CLASSES, type Tone } from "./reportUtils";
+
+const INK = "#18181B";
+const MUTED = "#71717A";
+const GRID = "#E4E4E7";
+const OK = "#15803D";
+const BAD = "#B91C1C";
+
+function statusTone(s: TestStatus): Tone {
+  if (s === "normal") return "ok";
+  if (s === "low" || s === "high") return "warn";
+  return "muted";
+}
+
+function statusWord(s: TestStatus, lang: Lang): string {
+  if (s === "low") return t("statusLow", lang);
+  if (s === "high") return t("statusHigh", lang);
+  if (s === "normal") return t("statusNormal", lang);
+  return "—";
+}
+
+function prefersReducedMotion(): boolean {
+  return typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+}
+
+/** One analyte over time against the latest report's normal band. */
+export default function TrendChart({ trend, lang }: { trend: Trend; lang: Lang }) {
+  const latest = trend.points[trend.points.length - 1];
+  const refLow = latest?.refLow ?? null;
+  const refHigh = latest?.refHigh ?? null;
+
+  const data = useMemo(
+    () =>
+      trend.points.map((p) => ({
+        label: formatMonthShort(p.date),
+        date: p.date,
+        value: p.value,
+        out: (p.refLow !== null && p.value < p.refLow) || (p.refHigh !== null && p.value > p.refHigh),
+      })),
+    [trend.points],
+  );
+
+  // "Nice" axis: bounds and the middle tick snap to a round step (5, 10, 0.5...) so the
+  // axis never shows values like 168.9 or 57.1.
+  const [yMin, yMax, yTicks] = useMemo(() => {
+    const vals = trend.points.map((p) => p.value);
+    if (refLow !== null) vals.push(refLow);
+    if (refHigh !== null) vals.push(refHigh);
+    const lo = Math.min(...vals);
+    const hi = Math.max(...vals);
+    const range = hi - lo || Math.abs(hi) || 1;
+    const step = Math.pow(10, Math.floor(Math.log10(range))) / 2;
+    const clean = (n: number) => Number(n.toFixed(6));
+    const niceLo = clean(Math.max(0, Math.floor((lo - range * 0.1) / step) * step));
+    const niceHi = clean(Math.ceil((hi + range * 0.1) / step) * step);
+    const mid = clean(Math.round((niceLo + niceHi) / 2 / step) * step);
+    return [niceLo, niceHi, [niceLo, mid, niceHi]];
+  }, [trend.points, refLow, refHigh]);
+
+  const DirIcon = trend.direction === "up" ? TrendingUp : trend.direction === "down" ? TrendingDown : Minus;
+  const tone = statusTone(trend.latestStatus);
+  const animate = !prefersReducedMotion();
+
+  return (
+    <figure className="rounded-card border bg-bg p-3">
+      <figcaption>
+        <div className="flex items-center justify-between gap-2">
+          <span className="truncate font-medium">{trend.name}</span>
+          <span
+            className={`inline-flex shrink-0 items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium ${TONE_CLASSES[tone]}`}
+          >
+            <DirIcon size={13} aria-hidden />
+            <span className={urduFont(lang)}>{statusWord(trend.latestStatus, lang)}</span>
+          </span>
+        </div>
+        <p className="mt-1 text-sm leading-snug text-muted">{trend.summary}</p>
+      </figcaption>
+      <div className="mt-2 h-[140px] w-full" role="img" aria-label={trend.summary}>
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart data={data} margin={{ top: 8, right: 12, bottom: 0, left: 0 }}>
+            <CartesianGrid stroke={GRID} strokeDasharray="0" vertical={false} />
+            {(refLow !== null || refHigh !== null) && (
+              <ReferenceArea
+                y1={refLow ?? yMin}
+                y2={refHigh ?? yMax}
+                fill={OK}
+                fillOpacity={0.1}
+                stroke={OK}
+                strokeOpacity={0.25}
+                ifOverflow="hidden"
+              />
+            )}
+            <XAxis
+              dataKey="label"
+              tick={{ fill: MUTED, fontSize: 11 }}
+              tickLine={false}
+              axisLine={{ stroke: GRID }}
+              interval="preserveStartEnd"
+              minTickGap={8}
+            />
+            <YAxis
+              domain={[yMin, yMax]}
+              ticks={yTicks}
+              tickFormatter={(v: number) => (Number.isInteger(v) ? String(v) : v.toFixed(1))}
+              tick={{ fill: MUTED, fontSize: 11 }}
+              tickLine={false}
+              axisLine={false}
+              width={36}
+            />
+            <Tooltip
+              cursor={{ stroke: MUTED, strokeDasharray: "3 3" }}
+              contentStyle={{ borderRadius: 12, border: `1px solid ${GRID}`, fontSize: 13, color: INK }}
+              labelFormatter={(_, payload) => {
+                const d = payload?.[0]?.payload as { date?: string } | undefined;
+                return d?.date ? formatDate(d.date, "en") : "";
+              }}
+              formatter={(value) => [`${value}${trend.unit ? ` ${trend.unit}` : ""}`, trend.name]}
+            />
+            <Line
+              type="monotone"
+              dataKey="value"
+              stroke={INK}
+              strokeWidth={2}
+              isAnimationActive={animate}
+              dot={(props: { cx?: number; cy?: number; index?: number; payload?: { out?: boolean } }) => (
+                <circle
+                  key={`dot-${props.index}`}
+                  cx={props.cx}
+                  cy={props.cy}
+                  r={4}
+                  fill={props.payload?.out ? BAD : INK}
+                  stroke="#FFFFFF"
+                  strokeWidth={2}
+                />
+              )}
+              activeDot={{ r: 6, stroke: "#FFFFFF", strokeWidth: 2, fill: INK }}
+            />
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
+    </figure>
+  );
+}
