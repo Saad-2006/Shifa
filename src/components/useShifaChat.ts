@@ -10,7 +10,7 @@ import { SAMPLE_EXTRACTION } from "@/lib/demoData";
 import { detectEmergency, EMERGENCY_SENTINEL } from "@/lib/emergency";
 import { blobToBase64, fileToPayload, UploadError, type UploadPayload } from "@/lib/image";
 import { t, type I18nKey } from "@/lib/i18n";
-import { compareIdentity, displayName, parseAge, parseSex, readPatient } from "@/lib/identity";
+import { ageNow, compareIdentity, displayName, parseAge, parseSex, readPatient } from "@/lib/identity";
 import { checkReport } from "@/lib/labRules";
 import { shifa } from "@/lib/store";
 import type {
@@ -99,32 +99,38 @@ function ensurePersonInfo(): { person: Person; created: boolean } {
 }
 const ensurePerson = (): Person => ensurePersonInfo().person;
 
+/** Age today from the report's printed age ("35 (Y)" on a Dec 2023 report -> 38), or null. */
+function currentAge(patient: PatientOnReport, reportDate: string): number | null {
+  const age = parseAge(patient.age);
+  return age !== null && age >= 1 ? ageNow(age, reportDate) : null;
+}
+
 /**
  * Learn from a confirmed report: remember the printed name and fill in a missing age or sex.
  * `rename` is only for a profile we just auto-created ("Me"), which takes the report's name.
  */
-function learnPatient(personId: string, patient: PatientOnReport, rename = false): void {
+function learnPatient(personId: string, patient: PatientOnReport, reportDate: string, rename = false): void {
   const person = shifa.getState().people.find((p) => p.id === personId);
   if (!person) return;
   const name = displayName(patient.name);
-  const age = parseAge(patient.age);
+  const age = currentAge(patient, reportDate);
   const sex = parseSex(patient.sex);
   const patch: Partial<Pick<Person, "name" | "relation" | "age" | "sex">> = {};
   if (rename && name) Object.assign(patch, { name, relation: "" });
-  if (typeof person.age !== "number" && age !== null && age >= 1) patch.age = Math.round(age);
+  if (typeof person.age !== "number" && age !== null) patch.age = age;
   if (!person.sex && sex) patch.sex = sex;
   if (Object.keys(patch).length) shifa.updatePerson(personId, patch);
   if (name) shifa.rememberReportName(personId, name);
 }
 
 /** New family member from the details printed on a report. */
-function personFromPatient(patient: PatientOnReport, fallbackName: string): Person {
-  const age = parseAge(patient.age);
+function personFromPatient(patient: PatientOnReport, reportDate: string, fallbackName: string): Person {
+  const age = currentAge(patient, reportDate);
   const sex = parseSex(patient.sex);
   const person = shifa.addPerson({
     name: displayName(patient.name) || fallbackName,
     relation: "",
-    ...(age !== null && age >= 1 ? { age: Math.round(age) } : {}),
+    ...(age !== null ? { age } : {}),
     ...(sex ? { sex } : {}),
   });
   if (patient.name) shifa.rememberReportName(person.id, patient.name);
@@ -300,7 +306,7 @@ export function useShifaChat() {
       //    report never puts a scary result on the wrong family member.
       const source: LabReport["source"] = opts.sample ? "sample" : "scan";
       if (created) {
-        learnPatient(person.id, readPatient(extracted).shown, true);
+        learnPatient(person.id, readPatient(extracted).shown, extracted.reportDate, true);
       } else {
         const verdict = compareIdentity(extracted, freshPerson(person), shifa.getState().people);
         if (verdict.status === "mismatch") {
@@ -338,7 +344,7 @@ export function useShifaChat() {
     offline: boolean,
     lang: ReturnType<typeof shifa.getState>["lang"],
   ) => {
-    learnPatient(personId, readPatient(extracted).shown);
+    learnPatient(personId, readPatient(extracted).shown, extracted.reportDate);
     setBusyMessageId(messageId);
     setScan({ messageId, step: 1 });
     await wait(CHECK_STEP_MS);
@@ -403,7 +409,9 @@ export function useShifaChat() {
         });
         return;
       }
-      const personId = choice.kind === "person" ? choice.personId : personFromPatient(pend.patient, t("familyMember", lang)).id;
+      const reportDate = pend.extracted?.reportDate ?? shifa.getState().reports.find((r) => r.id === msg.reportId)?.reportDate ?? "";
+      const personId =
+        choice.kind === "person" ? choice.personId : personFromPatient(pend.patient, reportDate, t("familyMember", lang)).id;
       if (personId !== msg.personId) {
         shifa.moveMessages([messageId, ...(pend.userMessageId ? [pend.userMessageId] : [])], personId);
       }
@@ -414,7 +422,7 @@ export function useShifaChat() {
       } else if (pend.mode === "move" && msg.reportId) {
         shifa.moveReport(msg.reportId, personId);
         const report = shifa.getState().reports.find((r) => r.id === msg.reportId);
-        if (report?.patient) learnPatient(personId, report.patient);
+        if (report?.patient) learnPatient(personId, report.patient, report.reportDate);
         if (personId !== msg.personId) {
           // Re-explain for the right person (the old answer named the wrong one).
           shifa.updateMessage(messageId, { text: "" });

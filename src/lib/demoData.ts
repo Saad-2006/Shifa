@@ -59,7 +59,7 @@ const AMMI_MARCH: ExtractedReport = {
   isLabReport: true,
   labName: "Demo Community Lab (fictional)",
   reportDate: "2026-03-12",
-  patientName: "Ammi (demo)",
+  patientName: "Ammi",
   patientAge: "57",
   patientSex: "F",
   tests: tests([
@@ -80,7 +80,7 @@ const ABBU_SEPT: ExtractedReport = {
   isLabReport: true,
   labName: "Demo Community Lab (fictional)",
   reportDate: "2026-09-20",
-  patientName: "Abbu (demo)",
+  patientName: "Abbu",
   patientAge: "62",
   patientSex: "M",
   tests: tests([
@@ -119,7 +119,7 @@ export function buildDemoFamily(now: Date = new Date()): {
   const reports: LabReport[] = [
     checkReport(AMMI_MARCH, { personId: DEMO_IDS.ammi, source: "demo", id: DEMO_IDS.ammiMarch, createdAt: "2026-03-12T12:00:00.000Z" }),
     checkReport(
-      { ...SAMPLE_EXTRACTION, patientName: "Ammi (demo)" },
+      { ...SAMPLE_EXTRACTION, patientName: "Ammi" },
       { personId: DEMO_IDS.ammi, source: "demo", id: DEMO_IDS.ammiOct, createdAt: "2026-10-08T12:00:00.000Z" },
     ),
     checkReport(ABBU_SEPT, { personId: DEMO_IDS.abbu, source: "demo", id: DEMO_IDS.abbuSept, createdAt: "2026-09-20T12:00:00.000Z" }),

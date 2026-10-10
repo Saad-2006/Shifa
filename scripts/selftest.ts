@@ -1,7 +1,9 @@
 // Data-layer self-test: npx tsx scripts/selftest.ts
 import { formatPhone, keywordAlertText, normalisePhone, reportAlertText, waLink } from "@/lib/whatsapp";
 import { detectEmergency } from "@/lib/emergency";
-import { compareIdentity, findPersonByName, isRealName, namesMatch, parseAge, parseSex } from "@/lib/identity";
+import { ageNow, compareIdentity, findPersonByName, isRealName, latestReportAge, namesMatch, parseAge, parseSex } from "@/lib/identity";
+import { personSubtitle, quickRelations, relationLabel, relationSex, RELATIONS } from "@/lib/relations";
+import { patientLine } from "@/components/reportUtils";
 import assert from "node:assert/strict";
 import type { Person, ExtractedTest, ExtractedReport } from "@/lib/types";
 import { canonicalKey, checkTest, checkReport, parseNumber, parseRange, URGENCY_RANK } from "@/lib/labRules";
@@ -271,6 +273,40 @@ const minhajLike = { ...report([T("HbA1c", "7.2", "%", "<5.7")], "2026-10-09"), 
   eq("age: '5 Months'", Math.round((parseAge("5 Months") ?? 0) * 12), 5);
   eq("age: '10 Days' < 1 year", (parseAge("10 Days") ?? 9) < 0.1, true);
   eq("age: plain '62'", parseAge("62"), 62);
+  // Chughtai prints the unit in brackets ("35 (Y)"), which used to leave the profile's age empty.
+  eq("age: Chughtai '35 (Y)'", parseAge("35 (Y)"), 35);
+  eq("age: '35(Y)'", parseAge("35(Y)"), 35);
+  eq("age: '35 Yrs.'", parseAge("35 Yrs."), 35);
+  eq("age: '35-Years'", parseAge("35-Years"), 35);
+  eq("age: Chughtai baby '5 (M)' is months", Math.round((parseAge("5 (M)") ?? 0) * 12), 5);
+  eq("age: '35/M' (age/sex together)", parseAge("35/M"), 35);
+  eq("age: '35 / Female'", parseAge("35 / Female"), 35);
+  eq("age: nothing readable", parseAge("N/A"), null);
+  const oct26 = new Date("2026-10-11T12:00:00Z");
+  eq("age now: 35 on a Dec 2023 report -> 38", ageNow(35, "2023-12-19", oct26), 38);
+  eq("age now: same-week report unchanged", ageNow(35, "2026-10-09", oct26), 35);
+  eq("age now: unreadable report date unchanged", ageNow(35, "", oct26), 35);
+  const imranReports = [
+    { personId: "e", reportDate: "2023-12-19", patient: { name: "IMRAN QURESHI .", age: "35 (Y)", sex: "M" } },
+    { personId: "e", reportDate: "2022-01-05", patient: { name: "Imran Qureshi", age: "33 Y", sex: "M" } },
+    { personId: "x", reportDate: "2026-10-01", patient: { name: "Other", age: "70", sex: "F" } },
+  ];
+  eq("newest report age for the edit sheet", latestReportAge(imranReports, "e", oct26), { printed: 35, now: 38, reportDate: "2023-12-19" });
+  eq("no report age -> null", latestReportAge(imranReports, "nobody", oct26), null);
+  eq("card line cleans name and age", patientLine({ name: "IMRAN QURESHI .", age: "35 (Y)", sex: "M" }, "en"), "Imran Qureshi · 35 yrs · Male");
+  eq("card line keeps unreadable age as printed", patientLine({ name: "", age: "N/A", sex: "" }, "en"), "N/A");
+
+  // One relation per chip (Brother and Sister, not "Brother / Sister").
+  ok("relations: Brother and Sister are separate", RELATIONS.some((r) => r.value === "Brother") && RELATIONS.some((r) => r.value === "Sister"));
+  ok("relations: no combined chips", RELATIONS.every((r) => !relationLabel(r.value, "en").includes("/")));
+  eq("relation labels in Roman", [relationLabel("Brother", "roman"), relationLabel("Sister", "roman")], ["Bhai", "Behan"]);
+  eq("relation implies sex", [relationSex("Sister"), relationSex("Brother"), relationSex("Self"), relationSex("Phuppo")], ["F", "M", "", ""]);
+  eq("old 'Sibling' + Male reads as Brother", relationLabel("Sibling", "en", "M"), "Brother");
+  eq("old 'Sibling' without sex still shown", relationLabel("Sibling", "en"), "Brother / Sister");
+  eq("custom relation shown as typed", relationLabel("Phuppo", "en"), "Phuppo");
+  eq("quick chips for a man", quickRelations("M").map((r) => r.value), ["Self", "Father", "Brother", "Husband", "Son"]);
+  eq("quick chips, sex unknown", quickRelations("").map((r) => r.value), ["Self", "Mother", "Father"]);
+  eq("subtitle: Brother · 38 yrs", personSubtitle({ id: "e", name: "Imran Qureshi", relation: "Brother", age: 38, sex: "M", createdAt: "" }, "en"), "Brother · 38 yrs");
   eq("sex: 'Female'", parseSex("Female"), "F");
   eq("sex: 'M'", parseSex("M"), "M");
   eq("sex: Urdu", parseSex("خاتون"), "F");
@@ -298,7 +334,7 @@ const minhajLike = { ...report([T("HbA1c", "7.2", "%", "<5.7")], "2026-10-09"), 
   ok("known name differs -> name conflict", compareIdentity(other, known, [known, abbu], now).conflicts.some((c) => c.kind === "name"));
   eq("profile with no details -> ok (nothing to contradict)", compareIdentity(minhaj, me, fam, now).status, "ok");
   const withPatient = checkReport(minhaj, { personId: "a", source: "scan" });
-  eq("checkReport keeps patient name for the card", withPatient.patient?.name, "SHAZIA BANO");
+  eq("checkReport keeps the cleaned patient name for the card", withPatient.patient?.name, "Shazia Bano");
 }
 
 // ---- 7d. WhatsApp alerts (code-built text, phone formats) ----------------
