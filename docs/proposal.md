@@ -3,7 +3,7 @@
 **Category:** AI in Healthcare
 **Team:** TODO: full names of all 3 members, university, semester
 **Keywords:** Medical Document AI · Urdu NLP · Lab Report Interpretation · Patient Safety · Health Literacy
-**Prototype:** [GitHub repo](TODO-link) · [Live demo](TODO-link) · [2-minute video](TODO-link)
+**Prototype:** [GitHub repo](TODO-link) · [Live demo](https://shifa-silk.vercel.app) · [2-minute video](TODO-link)
 
 ---
 
@@ -65,6 +65,9 @@ Generic chatbots are not the answer. They can misread numbers, invent values, or
 | Report scanning (photo or PDF) in chat | Transcribes tests, values, units, ranges | Flags values, checks danger values, sets urgency, builds the report card |
 | Explanations and follow-up chat | Explains in English / Urdu / Roman Urdu, grounded in the person's own reports | Supplies the verified flags, which the AI can't override |
 | Emergency detection | Flags emergencies in its replies | Keyword and fuzzy matching in three languages triggers the 1122 banner |
+| Patient identity check | Reads the patient's name, age and sex from the report | Compares them with the chosen family member. On a mismatch, nothing is added until the user confirms whose report it is |
+| WhatsApp alert | – | For code-decided emergencies only (a danger value, or emergency words): one tap opens WhatsApp with a code-written alert to a saved family number |
+| Dark mode | – | System / Light / Dark themes, readable in all three languages |
 | Trends across reports | – | Charts each test over time against its normal band |
 | Family profiles | – | Separate history per family member, stored only on the device |
 | Doctor Summary | – | Printable one-page summary with questions to ask |
@@ -74,6 +77,7 @@ Generic chatbots are not the answer. They can misread numbers, invent values, or
 - Scan a medicine strip, box or prescription; the reading is matched against a verified database of Pakistani brands.
 - Safety checks: the same active ingredient twice (e.g. Panadol + Panadol Extra), and daily-dose limits.
 - Dose schedules from Pakistani notation like "1+0+1 × 5 din", with calendar and WhatsApp reminders.
+- Automatic WhatsApp alerts through the WhatsApp Business API, once Meta verification and message templates are approved.
 
 ## 6. Implementation Plan & Timeline
 
@@ -105,7 +109,8 @@ Generic chatbots are not the answer. They can misread numbers, invent values, or
 
 | Risk | Mitigation |
 |---|---|
-| The AI misreads a value | Structured extraction; values shown next to the printed range so users can check; measured accuracy; easy re-scan |
+| The AI misreads a value | Structured extraction; values shown next to the printed range so users can check; accuracy measured per lab (Chughtai, Minhaj, Shaukat Khanum); easy re-scan |
+| A report is added to the wrong family member | Code checks the name, age and sex on the report and asks before adding anything that doesn't match |
 | The AI gives unsafe medical advice | It never diagnoses or prescribes. Flags and urgency come from code, and the AI is instructed it can't override them. A disclaimer is always visible |
 | A dangerous result is missed | Danger values are checked by code, independently of the AI, and covered by automated tests |
 | Poor photos or unusual lab formats | PDF upload, retake guidance, and testing across several Pakistani labs |

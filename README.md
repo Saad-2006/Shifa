@@ -7,11 +7,15 @@
 - **explains it in English, Urdu or Roman Urdu**, then answers your follow-up questions
 
 > Built for the AIEF 4th International AI Championship, category **AI in Healthcare**.
-> Live demo: TODO · Video (2 min): TODO
+> Live demo: https://shifa-silk.vercel.app · Video (2 min): TODO
 
 | Report card (checked by code) | Emergency detection | Urdu (mobile) |
 |---|---|---|
 | ![Report card](docs/screenshots/report-card.png) | ![Emergency banner](docs/screenshots/emergency.png) | ![Urdu answer](docs/screenshots/mobile-urdu.png) |
+
+| Wrong person? Asked before adding | Dark mode | WhatsApp alert (code-decided emergency) |
+|---|---|---|
+| ![Identity check](docs/screenshots/identity-check.png) | ![Dark mode](docs/screenshots/dark-report-card.png) | ![WhatsApp alert](docs/screenshots/dark-emergency-whatsapp.png) |
 
 ## Why it is not "just a chatbot"
 
@@ -35,6 +39,12 @@ The AI is told the flags were computed by code and must never override them.
 - **Urgency levels:** Emergency now · See a doctor this week · Mention at next visit · Normal.
 - **Follow-up chips:** "Kya ye serious hai?", "Doctor se kya poochein?", "Compare with last report".
 - **Family profiles:** Ammi, Abbu, Me. Each person keeps their own reports and chat.
+- **Patient identity check:** code compares the name, age and sex printed on the report with the chosen family member.
+  - If they don't match, **nothing is added** until you say whose report it is, so a scary result never lands on the wrong person.
+  - Every report card shows "On report: name · age · sex" with a "Not Ammi?" link to move it.
+- **One-tap WhatsApp alert:** only for emergencies decided by **code** (a danger value in a report, or emergency words typed in chat).
+  - Shifa opens WhatsApp with a ready, code-written alert to a saved family number. You tap Send.
+- **Dark mode:** System / Light / Dark, with no white flash on load. The Doctor Summary always prints light.
 - **Trends:** the same test across reports, charted against its normal band.
 - **Doctor Summary:** a printable one-page summary with questions to ask.
 - **Voice in and out** (best effort, using the browser's built-in speech).
@@ -69,10 +79,11 @@ Without a key, the app still runs in offline demo mode: "Try a sample report" an
 | Command | What it does |
 |---|---|
 | `npm run selftest` | Rule-engine and safety tests: flags, danger values, urgency, trends, emergency phrases, upload checks |
-| `npm run eval` | Reading-accuracy evaluation on hand-labelled real reports (needs `npm run dev` running) |
+| `npm run eval` | Reading-accuracy evaluation on hand-labelled real reports, with a per-lab table (needs `npm run dev` running) |
+| `npm run eval:draft` | Writes the AI's reading of new reports as draft labels for a person to check (see `eval/README.md`) |
 | `npm run models` | Lists the Gemini models your key can use |
 | `npx tsx scripts/smoke-api.ts` | Live end-to-end API check: sample report → checks → streamed explanation, follow-up, emergency, safety refusal (needs `npm run dev`) |
-| `node scripts/screens.mjs` | Drives the app in Chrome, checks for page errors, and refreshes `docs/screenshots/` (needs `npm run dev`) |
+| `node scripts/screens.mjs` | Drives the app in Chrome: the main flows, identity check, dark mode and WhatsApp alert. Checks for page errors and refreshes `docs/screenshots/` (needs `npm run dev`) |
 | `npm run build` | Production build |
 
 ## Architecture
@@ -99,7 +110,9 @@ emergency detector (client) ◀── text stream ──  emergency sentinel, of
 - **Medicines:** scan a strip, box or prescription. The reading is matched against a verified database of Pakistani brands.
 - **Medicine safety checks:** catch the same ingredient twice (Panadol + Panadol Extra) and doses over the daily maximum.
 - **Dose schedules:** turn "1+0+1 × 5 din" into reminders (Calendar / WhatsApp).
-- **Clinical review:** a clinician reviews the danger-value list and the explanation tone.
+- **Clinical review:** a clinician reviews the danger-value list, the standard fallback ranges and the explanation tone.
+- **Automatic WhatsApp alerts:** through the WhatsApp Business API. This needs Meta business verification and approved message templates. Today's alerts are one tap.
+- **More labs:** keep tuning on Chughtai, Minhaj and Shaukat Khanum reports with `npm run eval`.
 
 ## Disclaimer
 Shifa explains lab reports to help families understand them. It does not diagnose, prescribe, or replace a doctor. In an emergency, call **1122**.
