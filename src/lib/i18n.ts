@@ -370,23 +370,29 @@ const dict = {
   themeLight: { en: "Light", ur: "روشن", roman: "Light" },
   themeDark: { en: "Dark", ur: "گہرا", roman: "Dark" },
 
-  // WhatsApp alerts (only for emergencies decided by code)
-  waAlertTitle: { en: "🚨 Shifa alert for {name}", ur: "🚨 شفا الرٹ: {name}", roman: "🚨 Shifa alert: {name}" },
+  // WhatsApp alerts (only for emergencies decided by code). The message goes to a relative who
+  // may be far away, so it is calm and cautious; the 1122 / Edhi call buttons stay in the app's
+  // red banner for the person on the spot.
+  waAlertTitle: { en: "🩺 Shifa health note: {name}", ur: "🩺 شفا صحت نوٹ: {name}", roman: "🩺 Shifa health note: {name}" },
   waAlertReport: {
-    en: "Lab report ({lab}) has a danger-level value:",
-    ur: "لیب رپورٹ ({lab}) میں خطرے کی سطح کی ویلیو ہے:",
-    roman: "Lab report ({lab}) mein khatre ki satah wali value hai:",
+    en: "{name}'s lab report ({lab}) has a result Shifa's checks mark as urgent:",
+    ur: "{name} کی لیب رپورٹ ({lab}) میں ایک نتیجہ ہے جسے شفا کی جانچ فوری توجہ والا بتاتی ہے:",
+    roman: "{name} ki lab report ({lab}) mein aik result hai jise Shifa ki jaanch urgent batati hai:",
   },
-  waAlertSigns: { en: "Possible emergency signs: {signs}.", ur: "ممکنہ ایمرجنسی علامات: {signs}۔", roman: "Mumkina emergency alamaat: {signs}." },
+  waAlertSigns: {
+    en: "Possible warning signs for {name}: {signs}.",
+    ur: "{name} کے لیے ممکنہ انتباہی علامات: {signs}۔",
+    roman: "{name} ke liye mumkina warning alamaat: {signs}.",
+  },
   waAlertAction: {
-    en: "Please call Rescue 1122 or go to the nearest emergency now.",
-    ur: "فوراً ریسکیو 1122 پر کال کریں یا قریبی ایمرجنسی جائیں۔",
-    roman: "Fauran Rescue 1122 par call karein ya qareebi emergency jayein.",
+    en: "It might be best to get {name} checked on an urgent basis, or taken to the ER if they feel unwell.",
+    ur: "بہتر ہوگا کہ {name} کو جلد از جلد ڈاکٹر کو دکھائیں، یا طبیعت ٹھیک نہ لگے تو ایمرجنسی (ER) لے جائیں۔",
+    roman: "Behtar hoga ke {name} ko jald az jald doctor ko dikhayein, ya tabiyat theek na lage to ER le jayein.",
   },
   waAlertFooter: {
-    en: "(Sent from Shifa. Checked by fixed rules, not a diagnosis.)",
-    ur: "(شفا سے بھیجا گیا۔ یہ مقررہ اصولوں کی جانچ ہے، تشخیص نہیں۔)",
-    roman: "(Shifa se bheja gaya. Ye muqarrar rules ki jaanch hai, tashkhees nahi.)",
+    en: "(Sent from Shifa. This is an automatic check, not a diagnosis.)",
+    ur: "(شفا سے بھیجا گیا۔ یہ خودکار جانچ ہے، تشخیص نہیں۔)",
+    roman: "(Shifa se bheja gaya. Ye automatic jaanch hai, tashkhees nahi.)",
   },
   waCatCardiac: { en: "chest pain / heart", ur: "سینے میں درد / دل", roman: "seenay mein dard / dil" },
   waCatBreathing: { en: "trouble breathing", ur: "سانس میں تکلیف", roman: "saans mein takleef" },

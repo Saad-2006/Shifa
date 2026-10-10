@@ -189,8 +189,8 @@ const browser = await chromium.launch({ executablePath: CHROME, headless: true }
     await page.keyboard.press("Enter");
   });
   const href = decodeURIComponent((await page.getByRole("link", { name: /WhatsApp Bhai/i }).first().getAttribute("href")) ?? "");
-  const waOk = href.startsWith("https://wa.me/923001234567?text=") && href.includes("1122");
-  console.log("whatsapp: alert link to the saved number with 1122:", waOk);
+  const waOk = href.startsWith("https://wa.me/923001234567?text=") && href.includes("ER") && !href.includes("1122");
+  console.log("whatsapp: calm alert link to the saved number (urgent check-up / ER):", waOk);
   if (!waOk) problems.push(`[whatsapp] unexpected alert link: ${href.slice(0, 80)}`);
   await page.waitForTimeout(400);
   await page.screenshot({ path: `${OUT}/dark-emergency-whatsapp.png` });

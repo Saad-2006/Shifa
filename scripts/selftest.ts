@@ -317,13 +317,14 @@ eq("trend flat", buildTrends([
   const en = reportAlertText(danger, "Ammi", "en");
   ok("alert names the person", en.includes("Ammi"));
   ok("alert has the danger value from code", en.includes("Potassium 6.8") && en.includes("6.0"));
-  ok("alert tells them to call 1122", en.includes("1122"));
+  ok("alert is calm: urgent check-up or ER", en.includes("checked on an urgent basis") && en.includes("ER"));
+  ok("alert to a relative has no 1122/115 call order", !en.includes("1122") && !en.includes("115"));
   ok("alert says it's not a diagnosis", /not a diagnosis/i.test(en));
   ok("alert lists only danger values (not normal Hb)", !en.includes("Hb 12.5"));
-  ok("Roman alert", reportAlertText(danger, "Ammi", "roman").includes("Fauran Rescue 1122"));
-  ok("Urdu alert", reportAlertText(danger, "امی", "ur").includes("1122"));
+  ok("Roman alert", reportAlertText(danger, "Ammi", "roman").includes("jald az jald doctor ko dikhayein"));
+  ok("Urdu alert", reportAlertText(danger, "امی", "ur").includes("ایمرجنسی (ER)"));
   const kw = keywordAlertText(detectEmergency("Ammi ke seenay mein dard ho raha hai").category, "Ammi", "roman");
-  ok("keyword alert names the signs", kw.includes("seenay mein dard") && kw.includes("1122"));
+  ok("keyword alert names the signs, calmly", kw.includes("seenay mein dard") && kw.includes("ER") && !kw.includes("1122"));
 }
 
 // ---- 8. Store (Node with a fake window/localStorage) ---------------------
