@@ -65,9 +65,13 @@ export default function ChatThread({
   onResolveIdentity,
   onWrongPerson,
   contacts,
+  onSetRelation,
+  onEditPerson,
   footer,
 }: {
   contacts: AlertContact[];
+  onSetRelation: (personId: string, relation: string) => void;
+  onEditPerson: (personId: string) => void;
   messages: ChatMessage[];
   reports: LabReport[];
   lang: Lang;
@@ -163,6 +167,9 @@ export default function ChatThread({
                       onAsk={busyMessageId ? undefined : onAsk}
                       onOpen={onOpenReport}
                       personName={people.find((p) => p.id === m.personId)?.name}
+                      relationMissing={!people.find((p) => p.id === m.personId)?.relation.trim()}
+                      onSetRelation={(rel) => onSetRelation(m.personId, rel)}
+                      onEditPerson={() => onEditPerson(m.personId)}
                       onWrongPerson={busyMessageId || m.pendingIdentity ? undefined : () => onWrongPerson(m.id)}
                       contacts={contacts}
                     />

@@ -422,6 +422,39 @@ const dict = {
     ur: "درست موبائل نمبر لکھیں، مثلاً 0300 1234567",
     roman: "Sahi mobile number likhein, maslan 0300 1234567",
   },
+
+  // Family profiles: relation, edit, merge, delete
+  relSelf: { en: "Me", ur: "میں (خود)", roman: "Main (khud)" },
+  relMother: { en: "Mother", ur: "والدہ", roman: "Ammi" },
+  relFather: { en: "Father", ur: "والد", roman: "Abbu" },
+  relSpouse: { en: "Spouse", ur: "شریکِ حیات", roman: "Shohar / Biwi" },
+  relChild: { en: "Child", ur: "بچہ", roman: "Bacha" },
+  relSibling: { en: "Brother / Sister", ur: "بہن / بھائی", roman: "Behan / Bhai" },
+  relGrandparent: { en: "Grandparent", ur: "دادا / نانا", roman: "Dada / Nana" },
+  relOther: { en: "Other", ur: "دیگر", roman: "Koi aur" },
+  whoIsThis: { en: "Who is {name} to you?", ur: "{name} آپ کے کیا لگتے ہیں؟", roman: "{name} aap ke kya lagte hain?" },
+  editProfile: { en: "Edit profile", ur: "پروفائل میں تبدیلی", roman: "Profile edit karein" },
+  editPerson: { en: "Edit {name}", ur: "{name} میں تبدیلی", roman: "{name} edit karein" },
+  saveChanges: { en: "Save", ur: "محفوظ کریں", roman: "Save karein" },
+  sexLabel: { en: "Sex", ur: "جنس", roman: "Jins" },
+  sexUnset: { en: "Not set", ur: "معلوم نہیں", roman: "Pata nahi" },
+  otherRelation: { en: "Relation (type it)", ur: "رشتہ (لکھیں)", roman: "Rishta (likhein)" },
+  mergeTitle: { en: "Same person twice?", ur: "ایک ہی شخص دو بار؟", roman: "Aik hi shakhs do baar?" },
+  mergeHint: {
+    en: "Moves all of {name}'s reports and chat into the profile you pick, then removes this one.",
+    ur: "{name} کی تمام رپورٹس اور چیٹ منتخب پروفائل میں چلی جائیں گی، پھر یہ پروفائل ہٹ جائے گی۔",
+    roman: "{name} ki tamam reports aur chat chuni hui profile mein chali jayengi, phir ye profile hat jayegi.",
+  },
+  mergeInto: { en: "Merge into {name}", ur: "{name} میں ملا دیں", roman: "{name} mein mila dein" },
+  deleteProfile: { en: "Delete profile", ur: "پروفائل حذف کریں", roman: "Profile delete karein" },
+  deleteConfirm: {
+    en: "Delete {name}, with {n} reports and their chat? This can't be undone.",
+    ur: "{name} کو {n} رپورٹس اور چیٹ سمیت حذف کریں؟ یہ واپس نہیں ہو سکتا۔",
+    roman: "{name} ko {n} reports aur chat samait delete karein? Ye wapas nahi ho sakta.",
+  },
+  deleteYes: { en: "Yes, delete", ur: "ہاں، حذف کریں", roman: "Haan, delete karein" },
+  reportsN: { en: "{n} reports", ur: "{n} رپورٹس", roman: "{n} reports" },
+  reportOne: { en: "1 report", ur: "1 رپورٹ", roman: "1 report" },
 } satisfies Record<string, Entry>;
 
 export type I18nKey = keyof typeof dict;

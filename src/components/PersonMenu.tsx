@@ -6,6 +6,7 @@ import { t, urduFont } from "@/lib/i18n";
 import type { Lang, Person } from "@/lib/types";
 import AddPersonForm, { type NewPerson } from "./AddPersonForm";
 import { initialOf } from "./reportUtils";
+import { personSubtitle } from "@/lib/relations";
 
 export function Avatar({ person, size = 28, active = false }: { person: Person | null; size?: number; active?: boolean }) {
   return (
@@ -107,10 +108,7 @@ export default function PersonMenu({
                         <Avatar person={p} active={isActive} />
                         <span className="min-w-0 flex-1">
                           <span className="block truncate font-medium">{p.name}</span>
-                          <span className="block truncate text-xs text-muted">
-                            {p.relation}
-                            {p.age ? ` · ${t("years", lang, { n: p.age })}` : ""}
-                          </span>
+                          <span className="block truncate text-xs text-muted">{personSubtitle(p, lang)}</span>
                         </span>
                         {isActive && <Check size={18} aria-hidden />}
                       </button>

@@ -133,6 +133,12 @@ const yearsSince = (ymd: string, now: Date): number => {
   return Number.isNaN(t) ? 0 : Math.max(0, (now.getTime() - t) / (365.25 * 864e5));
 };
 
+/** The family member already known by this printed name, if any (avoids duplicate profiles). */
+export function findPersonByName(people: Person[], name: string): Person | undefined {
+  if (!name.trim()) return undefined;
+  return people.find((p) => knownNames(p).some((n) => namesMatch(name, n)));
+}
+
 /** Names this person is known by on reports (plus their profile name if it's a real name). */
 function knownNames(p: Person): string[] {
   const names = [...(p.reportNames ?? [])];
