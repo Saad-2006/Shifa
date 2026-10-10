@@ -1,5 +1,6 @@
 // One-tap WhatsApp alerts for emergencies decided by CODE (a danger value in a report, or the
 // keyword emergency detector). The message is built here, never by the AI; the user taps Send.
+// It goes to a relative, so the tone is calm and cautious ("get checked urgently / ER"), not alarming.
 import { formatDate, t } from "@/lib/i18n";
 import type { EmergencyCategory } from "@/lib/emergency";
 import type { LabReport, Lang } from "@/lib/types";
@@ -41,9 +42,9 @@ export function reportAlertText(report: LabReport, personName: string, lang: Lan
   const lab = [report.labName, formatDate(report.reportDate, lang)].filter(Boolean).join(", ");
   return [
     t("waAlertTitle", lang, { name: personName }),
-    t("waAlertReport", lang, { lab }),
+    t("waAlertReport", lang, { name: personName, lab }),
     ...dangers,
-    t("waAlertAction", lang),
+    t("waAlertAction", lang, { name: personName }),
     t("waAlertFooter", lang),
   ].join("\n");
 }
@@ -65,8 +66,8 @@ const CATEGORY_KEY: Record<EmergencyCategory, Parameters<typeof t>[0]> = {
 export function keywordAlertText(category: EmergencyCategory | null, personName: string, lang: Lang): string {
   return [
     t("waAlertTitle", lang, { name: personName }),
-    t("waAlertSigns", lang, { signs: t(CATEGORY_KEY[category ?? "other"], lang) }),
-    t("waAlertAction", lang),
+    t("waAlertSigns", lang, { name: personName, signs: t(CATEGORY_KEY[category ?? "other"], lang) }),
+    t("waAlertAction", lang, { name: personName }),
     t("waAlertFooter", lang),
   ].join("\n");
 }
