@@ -3,6 +3,7 @@
 import { FileText, ShieldCheck, UserRound } from "lucide-react";
 import { formatDate, t, urduFont } from "@/lib/i18n";
 import type { AlertContact, LabReport, Lang } from "@/lib/types";
+import { RELATIONS } from "@/lib/relations";
 import { reportAlertText } from "@/lib/whatsapp";
 import WhatsAppAlertButtons from "./WhatsAppAlertButtons";
 import UrgencyBadge from "./UrgencyBadge";
@@ -21,8 +22,15 @@ export default function ReportCard({
   personName,
   onWrongPerson,
   contacts = [],
+  relationMissing = false,
+  onSetRelation,
+  onEditPerson,
 }: {
   contacts?: AlertContact[];
+  /** The family member has no relation yet: ask "Who is Shazia Bano to you?" with one-tap chips. */
+  relationMissing?: boolean;
+  onSetRelation?: (relation: string) => void;
+  onEditPerson?: () => void;
   report: LabReport;
   lang: Lang;
   onAsk?: (question: string) => void;
@@ -68,6 +76,33 @@ export default function ReportCard({
             </button>
           )}
         </p>
+      )}
+
+      {relationMissing && personName && onSetRelation && (
+        <div className="mt-2 rounded-input bg-surface px-3 py-2">
+          <p className={`text-sm font-medium ${urduFont(lang)}`}>{t("whoIsThis", lang, { name: personName })}</p>
+          <div className="mt-1.5 flex flex-wrap gap-1.5">
+            {RELATIONS.slice(0, 3).map((r) => (
+              <button
+                key={r.value}
+                type="button"
+                onClick={() => onSetRelation(r.value)}
+                className={`min-h-9 rounded-full border bg-bg px-3 text-sm hover:bg-surface ${urduFont(lang)}`}
+              >
+                {t(r.label, lang)}
+              </button>
+            ))}
+            {onEditPerson && (
+              <button
+                type="button"
+                onClick={onEditPerson}
+                className={`min-h-9 rounded-full border border-dashed bg-bg px-3 text-sm text-muted hover:bg-surface hover:text-ink ${urduFont(lang)}`}
+              >
+                {t("relOther", lang)}…
+              </button>
+            )}
+          </div>
+        </div>
       )}
 
       <div className="mt-3">

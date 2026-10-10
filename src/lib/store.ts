@@ -250,6 +250,44 @@ export const shifa = {
     commit({ ...s, people: s.people.map((p) => (p.id === id ? { ...p, ...patch, id: p.id } : p)) });
   },
 
+  /** Remove a family member with their reports and chat. */
+  deletePerson: (id: string): void => {
+    const s = current();
+    if (!s.people.some((p) => p.id === id)) return;
+    const people = s.people.filter((p) => p.id !== id);
+    commit({
+      ...s,
+      people,
+      reports: s.reports.filter((r) => r.personId !== id),
+      messages: s.messages.filter((m) => m.personId !== id),
+      activePersonId: s.activePersonId === id ? (people[0]?.id ?? null) : s.activePersonId,
+    });
+  },
+
+  /** Same person added twice: move everything from one profile into another, then remove the first. */
+  mergePeople: (fromId: string, intoId: string): void => {
+    const s = current();
+    const from = s.people.find((p) => p.id === fromId);
+    const into = s.people.find((p) => p.id === intoId);
+    if (!from || !into || fromId === intoId) return;
+    const names = [...(into.reportNames ?? [])];
+    for (const n of from.reportNames ?? []) if (!names.some((x) => namesMatch(x, n))) names.push(n);
+    const merged: Person = {
+      ...into,
+      ...(typeof into.age !== "number" && typeof from.age === "number" ? { age: from.age } : {}),
+      ...(!into.sex && from.sex ? { sex: from.sex } : {}),
+      ...(!into.relation && from.relation ? { relation: from.relation } : {}),
+      ...(names.length ? { reportNames: names.slice(-5) } : {}),
+    };
+    commit({
+      ...s,
+      people: s.people.filter((p) => p.id !== fromId).map((p) => (p.id === intoId ? merged : p)),
+      reports: s.reports.map((r) => (r.personId === fromId ? { ...r, personId: intoId } : r)),
+      messages: s.messages.map((m) => (m.personId === fromId ? { ...m, personId: intoId } : m)),
+      activePersonId: s.activePersonId === fromId ? intoId : s.activePersonId,
+    });
+  },
+
   /** Remember the name printed on this person's confirmed report, so later reports can be checked. */
   rememberReportName: (personId: string, name: string): void => {
     const shown = displayName(name);

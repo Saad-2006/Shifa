@@ -1,7 +1,7 @@
 // Data-layer self-test: npx tsx scripts/selftest.ts
 import { formatPhone, keywordAlertText, normalisePhone, reportAlertText, waLink } from "@/lib/whatsapp";
 import { detectEmergency } from "@/lib/emergency";
-import { compareIdentity, isRealName, namesMatch, parseAge, parseSex } from "@/lib/identity";
+import { compareIdentity, findPersonByName, isRealName, namesMatch, parseAge, parseSex } from "@/lib/identity";
 import assert from "node:assert/strict";
 import type { Person, ExtractedTest, ExtractedReport } from "@/lib/types";
 import { canonicalKey, checkTest, checkReport, parseNumber, parseRange, URGENCY_RANK } from "@/lib/labRules";
@@ -255,6 +255,8 @@ eq("trend flat", buildTrends([
   eq("Minhaj report: 1 flagged", minhaj.flaggedCount, 1);
 }
 
+const minhajLike = { ...report([T("HbA1c", "7.2", "%", "<5.7")], "2026-10-09"), patientName: "SHAZIA BANO", patientAge: "53 Year(s)", patientSex: "Female" };
+
 // ---- 7c. Patient identity check (whose report is this?) -------------------
 {
   ok("names: same person, extra surname", namesMatch("SHAZIA BANO", "Shazia"));
@@ -433,6 +435,26 @@ async function storeTests(): Promise<void> {
   ok("bad number rejected", shifa.addContact({ name: "X", phone: "1122" }) === null);
   shifa.removeContact(shifa.getState().contacts[0].id);
   eq("remove alert number", shifa.getState().contacts.length, 2);
+  shifa.resetAll();
+
+  // Family profiles: duplicate merged, profile deleted, name lookup blocks duplicates
+  const b1 = shifa.addPerson({ name: "Shazia Bano", relation: "", age: 53, sex: "F" });
+  shifa.rememberReportName(b1.id, "SHAZIA BANO");
+  const b2 = shifa.addPerson({ name: "Shazia Bano", relation: "Mother" });
+  shifa.addReport({ ...checkReport(minhajLike, { personId: b2.id, source: "scan" }), id: "r-dup" });
+  shifa.addMessage({ personId: b2.id, role: "assistant", text: "explained", reportId: "r-dup" });
+  ok("name lookup finds the existing profile", findPersonByName(shifa.getState().people, "Mrs. Shazia Bano")?.id === b1.id);
+  shifa.mergePeople(b2.id, b1.id);
+  const st = shifa.getState();
+  eq("merge: one profile left", st.people.length, 1);
+  eq("merge: report moved", st.reports.find((r) => r.id === "r-dup")?.personId, b1.id);
+  ok("merge: chat moved", st.messages.every((m) => m.personId === b1.id));
+  eq("merge: relation filled from the duplicate", st.people[0].relation, "Mother");
+  eq("merge: age kept", st.people[0].age, 53);
+  shifa.deletePerson(b1.id);
+  eq("delete: profile gone", shifa.getState().people.length, 0);
+  eq("delete: their reports gone", shifa.getState().reports.length, 0);
+  eq("delete: their chat gone", shifa.getState().messages.length, 0);
   shifa.resetAll();
 }
 

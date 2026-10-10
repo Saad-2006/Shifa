@@ -11,6 +11,7 @@ import EmergencyBanner from "@/components/EmergencyBanner";
 import FollowUpChips from "@/components/FollowUpChips";
 import LanguageToggle from "@/components/LanguageToggle";
 import PersonMenu from "@/components/PersonMenu";
+import PersonEditSheet from "@/components/PersonEditSheet";
 import ReportSheet from "@/components/ReportSheet";
 import SignInGate from "@/components/SignInGate";
 import Sidebar from "@/components/Sidebar";
@@ -77,6 +78,13 @@ function ShifaApp({ state, auth }: { state: ShifaState; auth: ReturnType<typeof 
   const composerRef = useRef<ComposerHandle>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [sheetId, setSheetId] = useState<string | null>(null);
+  const [editPersonId, setEditPersonId] = useState<string | null>(null);
+  const editPerson = editPersonId ? (people.find((p) => p.id === editPersonId) ?? null) : null;
+  const openEditPerson = useCallback((id: string) => {
+    setDrawerOpen(false);
+    setEditPersonId(id);
+  }, []);
+  const closeEditPerson = useCallback(() => setEditPersonId(null), []);
 
   const activePerson = people.find((p) => p.id === activePersonId) ?? null;
   const personMessages = useMemo(
@@ -139,6 +147,7 @@ function ShifaApp({ state, auth }: { state: ShifaState; auth: ReturnType<typeof 
       <AccountCard auth={auth} lang={lang} />
       <Sidebar
       contacts={contacts}
+      onEditPerson={openEditPerson}
       lang={lang}
       people={people}
       activeId={activePerson?.id ?? null}
@@ -277,6 +286,8 @@ function ShifaApp({ state, auth }: { state: ShifaState; auth: ReturnType<typeof 
             onResolveIdentity={(id, choice) => void chat.resolveIdentity(id, choice)}
             onWrongPerson={chat.startMove}
             contacts={contacts}
+            onSetRelation={(id, rel) => shifa.updatePerson(id, { relation: rel })}
+            onEditPerson={openEditPerson}
             footer={
               showFollowUps ? <FollowUpChips lang={lang} canCompare={myReports.length >= 2} onPick={ask} /> : null
             }
@@ -297,6 +308,7 @@ function ShifaApp({ state, auth }: { state: ShifaState; auth: ReturnType<typeof 
         </div>
       </div>
 
+      <PersonEditSheet person={editPerson} people={people} reports={reports} lang={lang} onClose={closeEditPerson} />
       <ReportSheet
         key={sheetId ?? "closed"}
         report={sheetReport}

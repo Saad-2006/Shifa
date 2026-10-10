@@ -1,8 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ExternalLink, RotateCcw, Stethoscope, Trash, UserPlus, Users } from "lucide-react";
+import { ExternalLink, Pencil, RotateCcw, Stethoscope, Trash, UserPlus, Users } from "lucide-react";
 import { formatDate, t, urduFont } from "@/lib/i18n";
+import { personSubtitle } from "@/lib/relations";
 import { buildTrends } from "@/lib/trends";
 import type { AlertContact, LabReport, Lang, Person, Trend } from "@/lib/types";
 import AddPersonForm, { type NewPerson } from "./AddPersonForm";
@@ -44,8 +45,10 @@ export default function Sidebar({
   onClearChat,
   onReset,
   contacts,
+  onEditPerson,
 }: {
   contacts: AlertContact[];
+  onEditPerson: (id: string) => void;
   lang: Lang;
   people: Person[];
   activeId: string | null;
@@ -80,21 +83,27 @@ export default function Sidebar({
           {people.map((p) => {
             const isActive = p.id === activeId;
             return (
-              <li key={p.id}>
+              <li key={p.id} className={`flex items-center gap-1 rounded-input ${isActive ? "border bg-bg" : ""}`}>
                 <button
                   type="button"
                   onClick={() => onSelectPerson(p.id)}
                   aria-current={isActive ? "true" : undefined}
-                  className={`${rowBtn} ${isActive ? "border bg-bg font-semibold" : ""}`}
+                  className={`${rowBtn} min-w-0 flex-1 ${isActive ? "font-semibold hover:bg-transparent" : ""}`}
                 >
                   <Avatar person={p} active={isActive} />
                   <span className="min-w-0 flex-1">
                     <span className="block truncate">{p.name}</span>
-                    <span className="block truncate text-xs font-normal text-muted">
-                      {p.relation}
-                      {p.age ? ` · ${t("years", lang, { n: p.age })}` : ""}
-                    </span>
+                    <span className={`block truncate text-xs font-normal text-muted ${urduFont(lang)}`}>{personSubtitle(p, lang)}</span>
                   </span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onEditPerson(p.id)}
+                  aria-label={t("editPerson", lang, { name: p.name })}
+                  title={t("editPerson", lang, { name: p.name })}
+                  className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-muted hover:bg-surface hover:text-ink"
+                >
+                  <Pencil size={16} aria-hidden />
                 </button>
               </li>
             );
