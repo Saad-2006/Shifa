@@ -5,7 +5,8 @@
 //
 // For every eval/reports/<name>.{jpg,jpeg,png,webp,pdf} that has eval/labels/<name>.json
 // (format: eval/labels/_template.json) it POSTs the file to /api/extract, matches labelled
-// tests to extracted ones and writes eval/results/results.json + eval/results/summary.md.
+// tests to extracted ones and writes eval/results/results.json + eval/results/summary.md (with a per-lab table).
+// --draft: for reports without labels, write the AI's reading as a draft label to check by hand.
 
 import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { basename, extname, join } from "node:path";
@@ -225,6 +226,70 @@ function loadLabels(file: string): LabelTest[] {
   return (json.tests as LabelTest[]).filter((t) => t && typeof t.name === "string" && t.value !== undefined);
 }
 
+/** A label file written by --draft that no person has checked yet (still has "_draft": true). */
+function isDraft(file: string): boolean {
+  try {
+    return (JSON.parse(readFileSync(file, "utf8")) as { _draft?: unknown })._draft === true;
+  } catch {
+    return false;
+  }
+}
+
+// Lab from the file name prefix: "chughtai-01.jpg" -> Chughtai Lab. Used for the per-lab table.
+const LAB_NAMES: Record<string, string> = {
+  chughtai: "Chughtai Lab",
+  minhaj: "Minhaj Lab",
+  skm: "Shaukat Khanum",
+  shaukat: "Shaukat Khanum",
+  excel: "Excel Labs",
+  idc: "IDC",
+  aku: "Aga Khan",
+  agakhan: "Aga Khan",
+  essa: "Dr. Essa's Lab",
+};
+function labOf(file: string): string {
+  const prefix = basename(file, extname(file)).toLowerCase().split(/[-_\s\d]/)[0] || "other";
+  return LAB_NAMES[prefix] ?? prefix[0].toUpperCase() + prefix.slice(1);
+}
+
+/** H / L from the flag the lab printed (what the paper says), else unset. */
+function printedFlag(f: string): string | undefined {
+  const s = (f || "").trim().toLowerCase();
+  if (/^(h|high|\+|↑)/.test(s)) return "H";
+  if (/^(l|low|-|↓)/.test(s)) return "L";
+  return undefined;
+}
+
+/** --draft: write the AI's reading as a label file for a person to check (saves typing every value). */
+async function writeDrafts(files: string[]): Promise<void> {
+  if (!files.length) {
+    console.log("Every report already has a label file. Nothing to draft.");
+    return;
+  }
+  mkdirSync(LABELS_DIR, { recursive: true });
+  for (const file of files) {
+    process.stdout.write(`- drafting ${file} ... `);
+    const { res, error } = await extract(join(REPORTS_DIR, file), MIME[extname(file).toLowerCase()]);
+    if (error || !res) {
+      console.log(`ERROR ${error}`);
+      continue;
+    }
+    const tests = res.report.tests.map((t) => {
+      const flag = printedFlag(t.printedFlag);
+      return { name: t.name, value: t.value, unit: t.unit, refLow: t.refLow, refHigh: t.refHigh, ...(flag ? { flag } : {}) };
+    });
+    const out = {
+      _draft: true,
+      _help:
+        "DRAFT written by the AI. Check EVERY row against the paper report: fix wrong values, units and ranges, add missed rows, delete rows that aren't results, set flag (H/L/N) to what a doctor would mark. Then delete the _draft line so this report counts in the accuracy test.",
+      tests,
+    };
+    writeFileSync(join(LABELS_DIR, `${basename(file, extname(file))}.json`), JSON.stringify(out, null, 2) + "\n");
+    console.log(`${tests.length} rows`);
+  }
+  console.log("\nNow check each draft in eval/labels/ against the paper, then delete its _draft line.");
+}
+
 function row(cells: (string | number)[]): string {
   return `| ${cells.join(" | ")} |`;
 }
@@ -241,7 +306,17 @@ async function main(): Promise<void> {
     .map((f) => ({ file: f, label: join(LABELS_DIR, `${basename(f, extname(f))}.json`) }))
     .filter((p) => existsSync(p.label));
   const unlabelled = files.filter((f) => !pairs.some((p) => p.file === f));
-  if (unlabelled.length) console.log(`Skipping ${unlabelled.length} report(s) without labels: ${unlabelled.join(", ")}`);
+  if (process.argv.includes("--draft")) return writeDrafts(unlabelled);
+  if (unlabelled.length) {
+    console.log(`Skipping ${unlabelled.length} report(s) without labels: ${unlabelled.join(", ")}`);
+    console.log(`  Tip: npm run eval:draft writes AI drafts for them to check.`);
+  }
+  const drafts = pairs.filter((p) => isDraft(p.label));
+  if (drafts.length) {
+    console.log(`Skipping ${drafts.length} unchecked draft label(s): ${drafts.map((d) => basename(d.label)).join(", ")}`);
+    console.log(`  Check them against the paper report, then delete the "_draft" line.`);
+    pairs.splice(0, pairs.length, ...pairs.filter((p) => !isDraft(p.label)));
+  }
   if (!pairs.length) {
     console.error("No labelled reports found. Add eval/reports/<name>.jpg and eval/labels/<name>.json (see eval/README.md).");
     process.exit(1);
@@ -288,14 +363,31 @@ async function main(): Promise<void> {
     time,
   ];
   const avgMs = results.length ? results.reduce((a, r) => a + r.ms, 0) / results.length : 0;
+  // Per lab (from file name prefixes), so we can see which lab's format needs tuning.
+  const byLab = new Map<string, { counts: Counts; n: number; ms: number }>();
+  for (const r of results) {
+    const lab = labOf(r.file);
+    const g = byLab.get(lab) ?? { counts: emptyCounts(), n: 0, ms: 0 };
+    addCounts(g.counts, r);
+    g.n++;
+    g.ms += r.ms;
+    byLab.set(lab, g);
+  }
+  const labRows = [...byLab.entries()]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([lab, g]) => line(`${lab} (${g.n} report${g.n === 1 ? "" : "s"})`, g.counts, `${(g.ms / g.n / 1000).toFixed(1)} s avg`));
   const tableRows = [...results.map((r) => line(r.error ? `${r.file} (error)` : r.file, r, `${(r.ms / 1000).toFixed(1)} s`)), line("**Overall**", total, `${(avgMs / 1000).toFixed(1)} s avg`)];
 
   console.log("");
-  const widths = header.map((h, i) => Math.max(h.length, ...tableRows.map((r) => r[i].replace(/\*/g, "").length)));
+  const widths = header.map((h, i) => Math.max(h.length, ...[...tableRows, ...labRows].map((r) => r[i].replace(/\*/g, "").length)));
   const fmt = (cells: string[]) => cells.map((c, i) => c.replace(/\*/g, "").padEnd(widths[i])).join("  ");
   console.log(fmt(header));
   console.log(widths.map((w) => "-".repeat(w)).join("  "));
   for (const r of tableRows) console.log(fmt(r));
+  if (labRows.length > 1 || (labRows.length === 1 && results.length > 1)) {
+    console.log("\nBy lab:");
+    for (const r of labRows) console.log(fmt(r));
+  }
 
   const models = [...new Set(results.map((r) => r.model).filter(Boolean))].join(", ") || "n/a";
   const md = [
@@ -306,6 +398,12 @@ async function main(): Promise<void> {
     row(header),
     row(header.map(() => "---")),
     ...tableRows.map(row),
+    ``,
+    `### By lab`,
+    ``,
+    row(["Lab", ...header.slice(1)]),
+    row(header.map(() => "---")),
+    ...labRows.map(row),
     ``,
     `- **Tests found**: labelled rows the AI returned (matched by canonical test key, then by name).`,
     `- **Value exact**: value identical to the label (numbers within 1e-6, text case-insensitive), out of all labelled rows.`,
