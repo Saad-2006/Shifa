@@ -37,13 +37,13 @@ const isSelf = (p: Person) => /^(self|me|myself|khud|خود)$/i.test((p.relation
 const EN: Templates = {
   reportOf: (p) => (isSelf(p) || !p.name ? "Your report" : `${p.name}'s report`),
   urgency: {
-    emergency: (r) => `${r} has at least one value at a danger level. This needs emergency care now.`,
+    emergency: (r) => `${r} has at least one value at a danger level. It needs a doctor's attention today.`,
     soon: (r) => `${r} has values that need a doctor's attention this week.`,
     routine: (r) => `${r} has a few values slightly outside the normal range. Nothing urgent.`,
     normal: (r) => `${r} looks normal: all checked values are within the normal range.`,
   },
   next: {
-    emergency: "Call 1122 or go to the nearest hospital emergency department now.",
+    emergency: "Please get checked by a doctor today, or go to the ER if they feel unwell.",
     soon: "Please see a doctor within this week and take this report with you.",
     routine: "Show this report to the doctor at the next regular visit.",
     normal: "Nothing urgent. Keep up regular check-ups.",
@@ -59,7 +59,7 @@ const EN: Templates = {
   danger: "DANGER LEVEL",
   andMore: (n) => `- and ${n} more`,
   offline: "(Offline mode: AI explanation unavailable)",
-  emergency: "This may be an emergency. Call 1122 now or go to the nearest hospital emergency department. Do not wait for an online answer.",
+  emergency: "This could be serious. If it is happening now, call 1122 or go to the nearest hospital emergency. Don't wait for an online answer.",
   noReports: (p) => `There are no reports for ${p.name || "this person"} yet. Attach a lab report photo or PDF and Shifa will check it.`,
   testAnswer: (o) => `In ${o.report.toLowerCase().startsWith("your") ? "your report" : o.report} of ${o.date}${o.lab ? ` (${o.lab})` : ""}, ${o.name} is ${o.value}${o.range ? ` (normal: ${o.range})` : ""}, which is ${o.status}.`,
   earlier: (items) => `Earlier: ${items}.`,
@@ -73,13 +73,13 @@ const EN: Templates = {
 const ROMAN: Templates = {
   reportOf: (p) => (isSelf(p) || !p.name ? "Aap ki report" : `${p.name} ki report`),
   urgency: {
-    emergency: (r) => `${r} mein kam az kam aik value khatarnak level par hai. Is ke liye abhi emergency care chahiye.`,
+    emergency: (r) => `${r} mein kam az kam aik value khatarnak level par hai. Aaj hi doctor ki tawajjo chahiye.`,
     soon: (r) => `${r} mein kuch values aisi hain jin par is hafte doctor ki tawajjo chahiye.`,
     routine: (r) => `${r} mein kuch values normal range se thori bahar hain. Koi jaldi wali baat nahi.`,
     normal: (r) => `${r} normal hai: sab check ki gayi values normal range mein hain.`,
   },
   next: {
-    emergency: "Abhi 1122 par call karein ya foran qareebi hospital ki emergency mein jaein.",
+    emergency: "Aaj hi doctor se check karwayein, ya tabiyat kharab ho to ER le jaein.",
     soon: "Is hafte doctor ko zaroor dikhaein aur ye report saath le kar jaein.",
     routine: "Agli regular visit par doctor ko ye report dikha dein.",
     normal: "Koi jaldi wali baat nahi. Regular check-up karwate rahein.",
@@ -95,7 +95,7 @@ const ROMAN: Templates = {
   danger: "KHATARNAK LEVEL",
   andMore: (n) => `- aur ${n} values`,
   offline: "(Offline mode: AI explanation unavailable)",
-  emergency: "Ye emergency ho sakti hai. Abhi 1122 par call karein ya foran qareebi hospital ki emergency mein jaein. Online jawab ka intezar na karein.",
+  emergency: "Ye serious ho sakta hai. Agar abhi ho raha hai to 1122 par call karein ya qareebi hospital ki emergency mein jaein. Online jawab ka intezar na karein.",
   noReports: (p) => `${p.name || "Is shakhs"} ki abhi koi report nahi hai. Lab report ki photo ya PDF attach karein, Shifa check kar degi.`,
   testAnswer: (o) => `${o.report} (${o.date}${o.lab ? `, ${o.lab}` : ""}) mein ${o.name} ${o.value} hai${o.range ? ` (normal: ${o.range})` : ""}, yani ${o.status}.`,
   earlier: (items) => `Pehle: ${items}.`,
@@ -109,13 +109,13 @@ const ROMAN: Templates = {
 const UR: Templates = {
   reportOf: (p) => (isSelf(p) || !p.name ? "آپ کی رپورٹ" : `${p.name} کی رپورٹ`),
   urgency: {
-    emergency: (r) => `${r} میں کم از کم ایک ویلیو خطرناک حد پر ہے۔ اس کے لیے ابھی ایمرجنسی علاج چاہیے۔`,
+    emergency: (r) => `${r} میں کم از کم ایک ویلیو خطرناک حد پر ہے۔ آج ہی ڈاکٹر کی توجہ چاہیے۔`,
     soon: (r) => `${r} میں کچھ ویلیوز ایسی ہیں جن پر اس ہفتے ڈاکٹر کی توجہ چاہیے۔`,
     routine: (r) => `${r} میں کچھ ویلیوز نارمل رینج سے تھوڑی باہر ہیں۔ کوئی جلدی والی بات نہیں۔`,
     normal: (r) => `${r} نارمل ہے: تمام چیک کی گئی ویلیوز نارمل رینج میں ہیں۔`,
   },
   next: {
-    emergency: "ابھی 1122 پر کال کریں یا فوراً قریبی ہسپتال کی ایمرجنسی میں جائیں۔",
+    emergency: "آج ہی ڈاکٹر سے چیک کروائیں، یا طبیعت خراب ہو تو ای آر لے جائیں۔",
     soon: "اس ہفتے ڈاکٹر کو ضرور دکھائیں اور یہ رپورٹ ساتھ لے جائیں۔",
     routine: "اگلی باقاعدہ ملاقات پر ڈاکٹر کو یہ رپورٹ دکھا دیں۔",
     normal: "کوئی جلدی والی بات نہیں۔ باقاعدہ چیک اپ کرواتے رہیں۔",
@@ -131,7 +131,7 @@ const UR: Templates = {
   danger: "خطرناک حد",
   andMore: (n) => `- اور ${n} ویلیوز`,
   offline: "(آف لائن موڈ: AI وضاحت دستیاب نہیں)",
-  emergency: "یہ ایمرجنسی ہو سکتی ہے۔ ابھی 1122 پر کال کریں یا فوراً قریبی ہسپتال کی ایمرجنسی میں جائیں۔ آن لائن جواب کا انتظار نہ کریں۔",
+  emergency: "یہ سنجیدہ ہو سکتا ہے۔ اگر ابھی ہو رہا ہے تو 1122 پر کال کریں یا قریبی ہسپتال کی ایمرجنسی میں جائیں۔ آن لائن جواب کا انتظار نہ کریں۔",
   noReports: (p) => `${p.name || "اس فرد"} کی ابھی کوئی رپورٹ نہیں ہے۔ لیب رپورٹ کی تصویر یا PDF لگائیں، شفا اسے چیک کر دے گی۔`,
   testAnswer: (o) => `${o.report} (${o.date}${o.lab ? `، ${o.lab}` : ""}) میں ${o.name} ${o.value} ہے${o.range ? ` (نارمل: ${o.range})` : ""}، یعنی ${o.status}۔`,
   earlier: (items) => `پہلے: ${items}۔`,
@@ -308,18 +308,23 @@ function lastUserText(req: ChatRequest): string {
   return "";
 }
 
-/** Deterministic answer for when there is no AI. Starts with EMERGENCY_SENTINEL + "\n" in an emergency. */
+/**
+ * Deterministic answer for when there is no AI. Starts with EMERGENCY_SENTINEL + "\n" when code
+ * flags it, the same way as the chat route: typed emergency words (with the calm 1122 line), or
+ * explaining a report with danger values (its own "doctor today / ER" line is in the body).
+ */
 export function offlineAnswer(req: ChatRequest): string {
   const T = TEMPLATES[req.lang] ?? EN;
   const question = lastUserText(req);
   const focus = pickFocusReport(req.reports, req.focusReportId);
   const detected = detectEmergency(question).isEmergency;
-  const emergency = detected || focus?.urgency === "emergency";
 
   let body: string;
   if (req.task === "explain_report") body = explainReport(req, T);
   else if (detected) body = T.offline; // keep an emergency reply short
   else body = chatAnswer(req, question, T);
 
-  return emergency ? `${EMERGENCY_SENTINEL}\n${T.emergency}\n\n${body}` : body;
+  if (detected) return `${EMERGENCY_SENTINEL}\n${T.emergency}\n\n${body}`;
+  if (req.task === "explain_report" && focus?.urgency === "emergency") return `${EMERGENCY_SENTINEL}\n${body}`;
+  return body;
 }

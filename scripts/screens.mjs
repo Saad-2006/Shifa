@@ -60,14 +60,27 @@ const browser = await chromium.launch({ executablePath: CHROME, headless: true }
     await page.locator("textarea").fill("Is this serious? What does HbA1c mean?");
     await page.keyboard.press("Enter");
   });
+  // An everyday question (and a "see a doctor soon" report) must not open the urgent card.
+  const calmBefore = await page.getByText(/This could be serious/i).count();
+  console.log("no urgent card for an everyday question:", calmBefore === 0);
+  if (calmBefore) problems.push("[urgent] card shown for an everyday question");
   await page.screenshot({ path: `${OUT}/follow-up.png` });
 
   await waitForChat(page, async () => {
     await page.locator("textarea").fill("Ammi ke seenay mein dard ho raha hai aur saans nahi aa rahi");
     await page.keyboard.press("Enter");
   });
-  const banner = await page.getByText(/1122/).first().isVisible();
-  console.log("emergency banner visible:", banner);
+  // Typed emergency: calm card in the chat, WhatsApp first, exactly one 1122 button, no Edhi, no popup.
+  const card = await page.getByText(/This could be serious/i).first().isVisible();
+  const calls = await page.locator('a[href^="tel:"]').evaluateAll((els) => els.map((e) => e.getAttribute("href")));
+  const wa = await page.getByRole("link", { name: /Tell family on WhatsApp/i }).count();
+  const urgentOk = card && wa > 0 && calls.length === 1 && calls[0] === "tel:1122";
+  console.log("urgent card: WhatsApp first + single 1122 button:", urgentOk, calls);
+  if (!urgentOk) problems.push(`[urgent] typed emergency card wrong (card ${card}, whatsapp ${wa}, calls ${calls.join(",")})`);
+  // (Next.js keeps an empty role="alert" route announcer on every page, so only count alerts with text.)
+  if (await page.getByRole("alert").filter({ hasText: /\S/ }).count()) problems.push("[urgent] a popup/alert banner is still shown");
+  await page.getByText(/This could be serious/i).first().evaluate((el) => el.scrollIntoView({ block: "center" }));
+  await page.waitForTimeout(300);
   await page.screenshot({ path: `${OUT}/emergency.png` });
 
   const personId = await page.evaluate(() => JSON.parse(localStorage.getItem("shifa:v1") ?? "{}").activePersonId);
@@ -194,6 +207,31 @@ const browser = await chromium.launch({ executablePath: CHROME, headless: true }
   if (!waOk) problems.push(`[whatsapp] unexpected alert link: ${href.slice(0, 80)}`);
   await page.waitForTimeout(400);
   await page.screenshot({ path: `${OUT}/dark-emergency-whatsapp.png` });
+
+  // Danger value on a report: calm "checked today / ER" card with WhatsApp, and no 1122 at all.
+  await page.evaluate(() => {
+    const s = JSON.parse(localStorage.getItem("shifa:v1"));
+    const now = new Date().toISOString();
+    const personId = s.activePersonId;
+    s.reports.push({
+      id: "r-danger", personId, createdAt: now, reportDate: now.slice(0, 10), labName: "Chughtai Lab", source: "scan",
+      urgency: "emergency", urgencyReasons: ["Potassium 6.9 mmol/L is at a danger level (above 6.0)"], flaggedCount: 1,
+      tests: [{ panel: "", name: "Potassium", value: "6.9", numericValue: 6.9, unit: "mmol/L", refRangeText: "3.5 - 5.1", refLow: 3.5, refHigh: 5.1,
+        printedFlag: "H", key: "potassium", displayName: "Potassium", status: "high", severity: "critical", critical: true,
+        criticalReason: "Potassium 6.9 mmol/L is at a danger level (above 6.0)" }],
+    });
+    s.messages.push({ id: "m-danger", personId, role: "assistant", text: "Potassium is at a danger level.", createdAt: now, reportId: "r-danger", emergency: true });
+    localStorage.setItem("shifa:v1", JSON.stringify(s));
+  });
+  await page.reload({ waitUntil: "networkidle" });
+  await page.waitForTimeout(600);
+  const dangerCard = page.locator("section[aria-label*='Chughtai']").last();
+  const reportWa = await dangerCard.getByRole("link", { name: /WhatsApp Bhai/i }).count();
+  const reportCalls = await dangerCard.locator('a[href^="tel:"]').count();
+  const reportOk = reportWa > 0 && reportCalls === 0 && (await dangerCard.getByText(/checked by a doctor today/i).count()) > 0;
+  console.log("danger report: calm card with WhatsApp, no 1122:", reportOk);
+  if (!reportOk) problems.push(`[urgent] danger report card wrong (whatsapp ${reportWa}, calls ${reportCalls})`);
+  await dangerCard.screenshot({ path: `${OUT}/dark-danger-report.png` });
   await ctx.close();
 }
 

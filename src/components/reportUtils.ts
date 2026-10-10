@@ -1,6 +1,6 @@
 // Display helpers for checked lab data. Pure functions; no AI involved.
 import type { LucideIcon } from "lucide-react";
-import { CircleAlert, CircleArrowDown, CircleArrowUp, CircleCheck, CircleMinus, Siren, TriangleAlert } from "lucide-react";
+import { CircleAlert, CircleArrowDown, CircleArrowUp, CircleCheck, CircleMinus, Stethoscope, TriangleAlert } from "lucide-react";
 import { t, type I18nKey } from "@/lib/i18n";
 import type { CheckedTest, LabReport, Lang, PatientOnReport, Person, Urgency } from "@/lib/types";
 import { displayName, parseAge, parseSex } from "@/lib/identity";
@@ -25,7 +25,7 @@ export const TONE_DOT: Record<Tone, string> = {
 };
 
 export const URGENCY_META: Record<Urgency, { Icon: LucideIcon; tone: Tone; label: I18nKey; short: I18nKey; action: I18nKey }> = {
-  emergency: { Icon: Siren, tone: "emergency", label: "urgEmergency", short: "urgEmergency", action: "actEmergency" },
+  emergency: { Icon: Stethoscope, tone: "emergency", label: "urgEmergency", short: "urgEmergency", action: "actEmergency" },
   soon: { Icon: TriangleAlert, tone: "bad", label: "urgSoon", short: "urgSoonShort", action: "actSoon" },
   routine: { Icon: CircleAlert, tone: "warn", label: "urgRoutine", short: "urgRoutine", action: "actRoutine" },
   normal: { Icon: CircleCheck, tone: "ok", label: "urgNormal", short: "urgNormal", action: "actNormal" },

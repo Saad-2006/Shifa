@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
-import { FileText, HeartPulse, Paperclip, Phone, Siren, Square, Volume2, WifiOff } from "lucide-react";
+import { FileText, HeartPulse, Paperclip, Square, Volume2, WifiOff } from "lucide-react";
+import { detectEmergency } from "@/lib/emergency";
 import { t, urduFont } from "@/lib/i18n";
 import { canSpeak, onVoicesChanged, speak, stopSpeaking } from "@/lib/speech";
 import type { AlertContact, ChatMessage, LabReport, Lang, Person } from "@/lib/types";
@@ -9,6 +10,8 @@ import IdentityCheckCard from "./IdentityCheckCard";
 import Markdown from "./Markdown";
 import ReportCard from "./ReportCard";
 import ScanProgress, { TypingDots } from "./ScanProgress";
+import UrgentCard from "./UrgentCard";
+import { keywordAlertText } from "@/lib/whatsapp";
 import type { IdentityChoice } from "./useShifaChat";
 
 export interface ScanState {
@@ -38,19 +41,14 @@ function AttachmentChip({ name }: { name: string }) {
   );
 }
 
-function EmergencyCallout({ lang }: { lang: Lang }) {
-  return (
-    <div className="flex flex-wrap items-center gap-2 rounded-input border border-bad/30 bg-bad-bg px-3 py-2 text-bad">
-      <Siren size={18} aria-hidden className="shrink-0" />
-      <span className={`flex-1 text-sm font-semibold ${urduFont(lang)}`}>{t("emergencyInline", lang)}</span>
-      <a
-        href="tel:1122"
-        className="inline-flex min-h-11 items-center gap-1.5 rounded-input bg-emergency px-3 text-sm font-bold text-white"
-      >
-        <Phone size={16} aria-hidden /> 1122
-      </a>
-    </div>
-  );
+/** The user's message this reply answers, when code finds emergency words in it ("Abbu behosh ho gaye"). */
+function typedEmergency(messages: ChatMessage[], i: number) {
+  for (let j = i - 1; j >= 0; j--) {
+    if (messages[j].role !== "user") continue;
+    const r = detectEmergency(messages[j].text);
+    return r.isEmergency ? r : null;
+  }
+  return null;
 }
 
 export default function ChatThread({
@@ -130,7 +128,7 @@ export default function ChatThread({
   return (
     <div ref={scrollRef} onScroll={onScroll} className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
       <div className="mx-auto flex max-w-[760px] flex-col gap-6 px-4 pt-6 pb-8" aria-live="polite" aria-relevant="additions">
-        {messages.map((m) => {
+        {messages.map((m, i) => {
           if (m.role === "user") {
             return (
               <div key={m.id} className="flex animate-fade-in justify-end">
@@ -154,6 +152,9 @@ export default function ChatThread({
           const report = m.reportId ? reports.find((r) => r.id === m.reportId) : undefined;
           const hasText = m.text.trim().length > 0;
           const scanning = isBusy && scan?.messageId === m.id;
+          const personName = people.find((p) => p.id === m.personId)?.name ?? "";
+          // Typed emergency words (checked by code, never the AI alone): calm card, WhatsApp first.
+          const typed = m.emergency && !m.reportId ? typedEmergency(messages, i) : null;
 
           return (
             <div key={m.id} className="flex animate-fade-in gap-2.5">
@@ -188,7 +189,15 @@ export default function ChatThread({
                   />
                 )}
 
-                {m.emergency && <EmergencyCallout lang={msgLang} />}
+                {typed && (
+                  <UrgentCard
+                    kind="words"
+                    personName={personName}
+                    alertText={keywordAlertText(typed.category, personName, msgLang)}
+                    contacts={contacts}
+                    lang={msgLang}
+                  />
+                )}
 
                 {!hasText && isBusy && (scanning ? <ScanProgress step={scan.step} lang={msgLang} /> : <TypingDots label={t("typing", msgLang)} />)}
 

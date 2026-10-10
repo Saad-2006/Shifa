@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { MessageCircleQuestionMark, Siren } from "lucide-react";
+import { MessageCircleQuestionMark, TriangleAlert } from "lucide-react";
 import { t, urduFont } from "@/lib/i18n";
 import type { CheckedTest, Lang } from "@/lib/types";
 import { TONE_CLASSES, TONE_DOT, formatValue, rangeText, statusMeta, type Tone } from "./reportUtils";
@@ -48,7 +48,7 @@ export function StatusPill({ test, lang }: { test: CheckedTest; lang: Lang }) {
 export function DangerTag({ lang }: { lang: Lang }) {
   return (
     <span className="inline-flex items-center gap-1 rounded-full border border-emergency bg-emergency px-2 py-0.5 text-xs font-semibold whitespace-nowrap text-white">
-      <Siren size={13} aria-hidden strokeWidth={2.25} />
+      <TriangleAlert size={13} aria-hidden strokeWidth={2.25} />
       <span className={urduFont(lang)}>{t("danger", lang)}</span>
     </span>
   );

@@ -2,10 +2,16 @@
 import assert from "node:assert/strict";
 import {
   detectEmergency,
-  EMERGENCY_CONTACTS,
   EMERGENCY_SENTINEL,
+  RESCUE_NUMBER,
   type EmergencyCategory,
+  type EmergencyKind,
 } from "../src/lib/emergency";
+import { guardOutput } from "../src/lib/streamGuard";
+import { buildChatSystem } from "../src/lib/prompts";
+import { offlineAnswer } from "../src/lib/fallback";
+import { checkReport } from "../src/lib/labRules";
+import type { ChatRequest, ExtractedReport, Person } from "../src/lib/types";
 import { accessRequired, guardRequest, resetRateLimits, validateUpload } from "../src/lib/security";
 
 let passed = 0;
@@ -89,14 +95,87 @@ const NEGATIVES = [
   "my report is normal, thank you",
   "پیٹ میں درد ہے",
   "سر میں درد ہے",
+  // Everyday questions about a report must never open the urgent card.
+  "is my kidney failing",
+  "has his kidney failed",
+  "creatinine high means kidney failure?",
+  "is this dangerous",
+  "kya ye khatarnak hai",
+  "is it an emergency",
+  "emergency hai kya",
+  "kya mujhe ER jana chahiye",
+  "can this cause a heart attack in future?",
+  "uric acid zyada hai, joron mein dard hai",
+  "saans phoolti hai seerhiyan chadhte hue",
+  "Is this serious?",
+  "Kya ye serious hai?",
   "",
 ];
 
 async function main() {
 await test("emergency constants", () => {
   assert.equal(EMERGENCY_SENTINEL, "[[EMERGENCY]]");
-  assert.deepEqual(EMERGENCY_CONTACTS.map((c) => c.number), ["1122", "115"]);
-  assert.equal(EMERGENCY_CONTACTS[0].name, "Rescue 1122");
+  assert.equal(RESCUE_NUMBER, "1122");
+});
+
+// Only code raises the urgent card: the model's own tag is dropped unless code flagged it.
+async function guarded(chunks: string[], kind: EmergencyKind | null): Promise<string> {
+  async function* src() {
+    for (const c of chunks) yield c;
+  }
+  let out = "";
+  for await (const piece of guardOutput(src(), kind, "en")) out += piece;
+  return out;
+}
+const S = EMERGENCY_SENTINEL;
+await test("stream guard: the AI alone can't raise an emergency", async () => {
+  const out = await guarded(["[[EMER", "GENCY]]\nCall 1122 now. ", "Hb is low."], null);
+  assert.ok(!out.includes(S), out);
+  assert.ok(out.startsWith("Call 1122 now."), out);
+});
+await test("stream guard: code-flagged reply always starts with the tag", async () => {
+  assert.ok((await guarded(["Hb is low."], "report")).startsWith(`${S}\nHb is low.`));
+  assert.ok((await guarded([`${S}\n`, "Please go to the ER."], "words")).startsWith(`${S}\nPlease go to the ER.`));
+});
+await test("stream guard: empty answers fall back calmly by kind", async () => {
+  const report = await guarded([], "report");
+  assert.ok(report.includes("doctor today") && !report.includes("1122"), report);
+  assert.ok((await guarded([], "words")).includes("1122"));
+  assert.ok(!(await guarded([], null)).includes(S));
+});
+
+// Report danger values are calm (doctor today / ER); only typed emergencies mention 1122.
+const person = { id: "p", name: "Imran Qureshi", relation: "Brother", createdAt: "" } as Person;
+const k = (value: string): ExtractedReport => ({
+  isLabReport: true, labName: "Chughtai Lab", reportDate: "2026-10-09", patientName: "Imran Qureshi", patientAge: "38", patientSex: "M", notes: "",
+  tests: [{ panel: "", name: "Potassium", value, numericValue: Number(value), unit: "mmol/L", refRangeText: "3.5 - 5.1", refLow: 3.5, refHigh: 5.1, printedFlag: "" }],
+});
+const danger = checkReport(k("6.9"), { personId: "p", source: "scan" });
+await test("danger report is code-flagged emergency (fixture check)", () => assert.equal(danger.urgency, "emergency"));
+const chatReq = (task: ChatRequest["task"], text = ""): ChatRequest => ({
+  lang: "en", person, reports: [danger], task, focusReportId: danger.id,
+  messages: text ? [{ role: "user", text }] : [],
+});
+await test("prompt: explaining a danger report is calm, no 1122", () => {
+  const sys = buildChatSystem({ ...chatReq("explain_report"), emergencyDetected: false });
+  assert.ok(sys.includes("MUST start with the") && sys.includes("checked by a doctor today"));
+  assert.ok(!/IMPORTANT:[^\n]*1122/.test(sys), "report IMPORTANT line mentions 1122");
+});
+await test("prompt: follow-up on a danger report doesn't re-raise the card", () => {
+  const sys = buildChatSystem({ ...chatReq("chat", "what should he eat?"), emergencyDetected: false });
+  assert.ok(!sys.includes("IMPORTANT:"), "follow-up still forced the emergency tag");
+});
+await test("prompt: typed emergency keeps 1122", () => {
+  const sys = buildChatSystem({ ...chatReq("chat", "he fainted"), emergencyDetected: true });
+  assert.ok(/IMPORTANT:[^\n]*1122/.test(sys));
+});
+await test("offline: danger report is calm (no 1122), typed emergency has 1122", () => {
+  const explain = offlineAnswer(chatReq("explain_report"));
+  assert.ok(explain.startsWith(S) && !explain.includes("1122") && explain.includes("today"), explain);
+  const followUp = offlineAnswer(chatReq("chat", "what should he eat?"));
+  assert.ok(!followUp.includes(S) && !followUp.includes("1122"), followUp);
+  const typed = offlineAnswer(chatReq("chat", "Abbu behosh ho gaye"));
+  assert.ok(typed.startsWith(S) && typed.includes("1122"), typed);
 });
 
 for (const [text, category] of POSITIVES) {

@@ -9,7 +9,7 @@ A chat-first web app for Pakistani families. The user attaches a lab report (pho
 3. **Code renders a report card**
 4. **AI explains it** (`/api/chat`, streaming) in English, Urdu (RTL) or Roman Urdu, grounded only in this person's reports
 
-Follow-up questions use the same chat. An emergency detector (keywords + an AI flag) shows a red 1122 banner.
+Follow-up questions use the same chat. An emergency detector (code only: keywords, or danger values on a report) shows a calm card in the chat with a WhatsApp alert to family first; typed emergencies also get one Call 1122 button.
 
 **Never let the AI decide** a flag, an urgency level or a number: those come from code.
 
@@ -99,7 +99,7 @@ Out of scope for Phase 1: medicines, SMS, user accounts, a server database, land
     - Normal: green `#15803D` on `#F0FDF4`
     - Attention: amber `#B45309` on `#FFFBEB`
     - Urgent: red `#B91C1C` on `#FEF2F2`
-    - Emergency banner: solid `#DC2626` with white text
+    - Urgent badge (danger values): solid `#DC2626` with white text; the urgent card itself is amber
 - **Shape:** radius 16px for cards, 12px for inputs, full for chips. 1px borders, no heavy shadows.
 - **Type:**
   - Geist (already set up), 17px base. Urdu uses Noto Nastaliq Urdu with `dir="rtl"` and a generous line-height.

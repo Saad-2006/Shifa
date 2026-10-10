@@ -1,6 +1,7 @@
-import { detectEmergency, EMERGENCY_SENTINEL } from "@/lib/emergency";
+import { detectEmergency, type EmergencyKind } from "@/lib/emergency";
 import { offlineAnswer } from "@/lib/fallback";
 import { GeminiError, isConfigured, streamText } from "@/lib/gemini";
+import { guardOutput } from "@/lib/streamGuard";
 import { buildChatContents, buildChatSystem, pickFocusReport } from "@/lib/prompts";
 import { requireSignIn } from "@/lib/authGuard";
 import { guardRequest } from "@/lib/security";
@@ -124,80 +125,6 @@ function parseChatRequest(body: unknown): { ok: true; value: ChatRequest } | { o
 
 // ---------------------------------------------------------------- streaming helpers
 
-const CUT_OFF: Record<Lang, string> = {
-  en: "(Sorry, the answer was cut off. Please try asking again.)",
-  roman: "(Maazrat, jawab beech mein ruk gaya. Meherbani karke dobara poochein.)",
-  ur: "(معذرت، جواب درمیان میں رک گیا۔ براہ کرم دوبارہ پوچھیں۔)",
-};
-const EMPTY: Record<Lang, string> = {
-  en: "Sorry, I couldn't prepare an answer right now. Please try again.",
-  roman: "Maazrat, main abhi jawab tayyar nahi kar saki. Meherbani karke dobara koshish karein.",
-  ur: "معذرت، میں ابھی جواب تیار نہیں کر سکی۔ براہ کرم دوبارہ کوشش کریں۔",
-};
-const EMERGENCY_LINE: Record<Lang, string> = {
-  en: "This may be an emergency. Call 1122 now or go to the nearest hospital emergency department.",
-  roman: "Ye emergency ho sakti hai. Abhi 1122 par call karein ya foran qareebi hospital ki emergency mein jaein.",
-  ur: "یہ ایمرجنسی ہو سکتی ہے۔ ابھی 1122 پر کال کریں یا فوراً قریبی ہسپتال کی ایمرجنسی میں جائیں۔",
-};
-
-/**
- * Normalise the start of the model output: if it begins with the sentinel, emit exactly
- * SENTINEL + "\n"; if it doesn't but we must flag an emergency, prepend SENTINEL + "\n".
- * Buffers only until the first non-whitespace characters can be compared with the sentinel.
- */
-async function* guardOutput(stream: AsyncIterable<string>, mustFlag: boolean, lang: Lang): AsyncGenerator<string> {
-  const S = EMERGENCY_SENTINEL;
-  let buf = "";
-  let decided = false;
-  let sentinelOut = false; // the sentinel line has been emitted
-  let sentContent = false; // some visible text after the sentinel has been emitted
-
-  const start = (): string => {
-    decided = true;
-    let t = buf.replace(/^\s+/, "");
-    if (t.startsWith(S)) t = t.slice(S.length).replace(/^\s+/, "");
-    else if (!mustFlag) {
-      if (t) sentContent = true;
-      return t;
-    }
-    sentinelOut = true;
-    if (t) sentContent = true;
-    return `${S}\n${t}`;
-  };
-
-  try {
-    for await (const piece of stream) {
-      if (!piece) continue;
-      if (decided) {
-        if (sentContent) yield piece;
-        else if (piece.trim()) {
-          sentContent = true;
-          yield piece.replace(/^\s+/, "");
-        }
-        continue;
-      }
-      buf += piece;
-      const t = buf.replace(/^\s+/, "");
-      if (t.length < S.length && S.startsWith(t)) continue; // could still become the sentinel
-      yield start();
-    }
-    if (!decided) {
-      const out = start();
-      if (out) yield out;
-    }
-    if (!sentContent) yield sentinelOut ? EMERGENCY_LINE[lang] : EMPTY[lang]; // the model produced nothing usable
-  } catch (e) {
-    if (e instanceof GeminiError) console.error(`[chat] stream ${e.code} (${e.status})`);
-    else console.error("[chat] stream error", e instanceof Error ? e.name : typeof e);
-    if (!decided) {
-      const out = start();
-      if (out) yield out;
-    }
-    if (sentContent) yield `\n\n${CUT_OFF[lang]}`;
-    else yield sentinelOut ? `${EMERGENCY_LINE[lang]}\n\n${CUT_OFF[lang]}` : CUT_OFF[lang];
-  }
-}
-
 async function* once(text: string): AsyncGenerator<string> {
   // A few chunks so the client's streaming UI behaves the same as with the model.
   const parts = text.split(/(?<=\n)/);
@@ -264,8 +191,15 @@ export async function POST(req: Request): Promise<Response> {
   const lastUser = [...chat.messages].reverse().find((m) => m.role === "user")?.text ?? "";
   const detected = detectEmergency(lastUser).isEmergency;
   const focus = pickFocusReport(chat.reports, chat.focusReportId);
-  const mustFlag = detected || focus?.urgency === "emergency";
-  const flagHeader: Record<string, string> = mustFlag ? { "x-shifa-emergency": "1" } : {};
+  // Code decides: emergency words in the latest message, or danger values in the report being
+  // explained. Follow-up questions about that report don't raise it again (its card already shows).
+  const kind: EmergencyKind | null = detected
+    ? "words"
+    : chat.task === "explain_report" && focus?.urgency === "emergency"
+      ? "report"
+      : null;
+  const mustFlag = kind !== null;
+  const flagHeader: Record<string, string> = kind ? { "x-shifa-emergency": kind } : {};
 
   const offline = (): Response =>
     streamResponse(once(offlineAnswer(chat)), { "x-shifa-offline": "1", "x-shifa-model": "offline", ...flagHeader });
@@ -287,7 +221,7 @@ export async function POST(req: Request): Promise<Response> {
       firstByteTimeoutMs: 20000, // per model, until the first text arrives
       signal: req.signal,
     });
-    return streamResponse(guardOutput(stream, mustFlag, chat.lang), { "x-shifa-model": model, ...flagHeader });
+    return streamResponse(guardOutput(stream, kind, chat.lang), { "x-shifa-model": model, ...flagHeader });
   } catch (e) {
     const code = e instanceof GeminiError ? e.code : "upstream";
     console.error(`[chat] Gemini ${code}${e instanceof GeminiError ? ` (${e.status})` : ""}`);
