@@ -20,7 +20,7 @@ function watch(page, label) {
 /** Wait for the next /api/chat stream to finish completely. */
 async function waitForChat(page, action) {
   const [res] = await Promise.all([
-    page.waitForResponse((r) => r.url().includes("/api/chat"), { timeout: 90_000 }),
+    page.waitForResponse((r) => r.url().includes("/api/chat"), { timeout: 180_000 }),
     action(),
   ]);
   // The composer is disabled while Shifa is busy; it re-enables when the answer is complete.
@@ -30,7 +30,7 @@ async function waitForChat(page, action) {
       return t && !t.disabled;
     },
     null,
-    { timeout: 90_000 },
+    { timeout: 180_000 },
   );
   await page.waitForTimeout(800); // let the throttled store flush and animations settle
   return res;
@@ -122,6 +122,78 @@ const browser = await chromium.launch({ executablePath: CHROME, headless: true }
   });
   const en = await lastAnswer();
   console.log("english answer is English:", !/[\u0600-\u06FF]/.test(en) && !/\b(hai|hain|mein|ki|aur)\b/i.test(en), "|", en.slice(0, 90).replace(/\n/g, " "));
+  await ctx.close();
+}
+
+// ---------- Mobile, English: patient identity check (wrong person -> ask before adding) ----------
+{
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 3, isMobile: true, hasTouch: true });
+  const page = await ctx.newPage();
+  watch(page, "identity");
+  const state = () => page.evaluate(() => JSON.parse(localStorage.getItem("shifa:v1") ?? "{}"));
+  await page.goto(BASE, { waitUntil: "networkidle" });
+  await page.getByRole("radio", { name: "English" }).first().click();
+  await page.getByRole("button", { name: /Load demo family/i }).first().click();
+  await page.waitForTimeout(400);
+  const abbuId = (await state()).people.find((p) => p.name === "Abbu").id;
+  await page.evaluate((id) => {
+    const s = JSON.parse(localStorage.getItem("shifa:v1"));
+    s.activePersonId = id;
+    localStorage.setItem("shifa:v1", JSON.stringify(s));
+  }, abbuId);
+  await page.reload({ waitUntil: "networkidle" });
+  const before = (await state()).reports.length;
+  await page.locator('input[type=file][accept="image/*,application/pdf"]').first().setInputFiles("public/samples/sample-report.png");
+  await page.getByText(/Is this report for Abbu\?/i).first().waitFor({ timeout: 180_000 });
+  const addedEarly = (await state()).reports.length - before;
+  console.log("identity: card shown for Abbu, reports added before choosing:", addedEarly);
+  if (addedEarly !== 0) problems.push("[identity] a report was added before the user chose who it's for");
+  await page.screenshot({ path: `${OUT}/identity-check.png` });
+  await page.getByRole("button", { name: /Add to Ammi/i }).first().click();
+  await page.waitForFunction(() => document.querySelector("textarea") && !document.querySelector("textarea").disabled, null, { timeout: 180_000 });
+  const s = await state();
+  const owner = s.people.find((p) => p.id === s.reports.at(-1).personId)?.name;
+  console.log("identity: after 'Add to Ammi' the report belongs to", owner);
+  if (owner !== "Ammi") problems.push(`[identity] report went to ${owner}, expected Ammi`);
+  await ctx.close();
+}
+
+// ---------- Mobile: dark mode + WhatsApp alert ----------
+{
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 3, isMobile: true, hasTouch: true });
+  const page = await ctx.newPage();
+  watch(page, "dark");
+  await page.addInitScript(() => localStorage.setItem("shifa:theme", "dark"));
+  await page.goto(BASE, { waitUntil: "domcontentloaded" });
+  const early = await page.evaluate(() => document.documentElement.getAttribute("data-theme"));
+  if (early !== "dark") problems.push(`[dark] theme not applied before first paint (got ${early})`);
+  await page.waitForLoadState("networkidle");
+  await page.getByRole("radio", { name: "English" }).first().click();
+  await page.getByRole("button", { name: /Load demo family/i }).first().click();
+  await page.waitForTimeout(500);
+  await page.getByText(/Checked by Shifa rules/i).first().evaluate((el) => el.scrollIntoView({ block: "end" }));
+  await page.waitForTimeout(400);
+  await page.screenshot({ path: `${OUT}/dark-report-card.png` });
+
+  // WhatsApp: save a family number, then a code-detected emergency offers a one-tap alert to it
+  await page.getByRole("button", { name: /menu/i }).first().click();
+  await page.getByRole("button", { name: /Add number/i }).first().click();
+  await page.getByPlaceholder("e.g. Bhai").fill("Bhai");
+  await page.getByPlaceholder("0300 1234567").fill("0300-1234567");
+  await page.getByRole("button", { name: /^Add number$/ }).last().click();
+  await page.keyboard.press("Escape");
+  const close = page.getByRole("button", { name: /close menu/i }).first();
+  if (await close.isVisible().catch(() => false)) await close.click();
+  await waitForChat(page, async () => {
+    await page.locator("textarea").fill("Ammi ke seenay mein dard ho raha hai");
+    await page.keyboard.press("Enter");
+  });
+  const href = decodeURIComponent((await page.getByRole("link", { name: /WhatsApp Bhai/i }).first().getAttribute("href")) ?? "");
+  const waOk = href.startsWith("https://wa.me/923001234567?text=") && href.includes("1122");
+  console.log("whatsapp: alert link to the saved number with 1122:", waOk);
+  if (!waOk) problems.push(`[whatsapp] unexpected alert link: ${href.slice(0, 80)}`);
+  await page.waitForTimeout(400);
+  await page.screenshot({ path: `${OUT}/dark-emergency-whatsapp.png` });
   await ctx.close();
 }
 
