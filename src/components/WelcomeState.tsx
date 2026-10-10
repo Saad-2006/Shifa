@@ -102,7 +102,7 @@ export default function WelcomeState({
                   onClick={() => onSelectPerson(p.id)}
                   aria-pressed={isActive}
                   className={`inline-flex min-h-11 items-center gap-2 rounded-full border py-1 ps-1 pe-4 transition-colors ${
-                    isActive ? "border-ink bg-ink text-white" : "bg-bg hover:bg-surface"
+                    isActive ? "border-ink bg-ink text-on-ink" : "bg-bg hover:bg-surface"
                   }`}
                 >
                   <Avatar person={p} active={!isActive} size={30} />

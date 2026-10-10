@@ -24,7 +24,7 @@ export default function AccountCard({ auth, lang, compact = false }: { auth: Aut
           // eslint-disable-next-line @next/next/no-img-element -- tiny Google avatar; next/image would need remote config
           <img src={u.image} alt="" width={36} height={36} referrerPolicy="no-referrer" className="h-9 w-9 shrink-0 rounded-full" />
         ) : (
-          <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-ink text-sm font-semibold text-white">
+          <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-ink text-sm font-semibold text-on-ink">
             {(u.name || u.email || "?").slice(0, 1).toUpperCase()}
           </span>
         )}
