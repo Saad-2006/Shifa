@@ -369,6 +369,53 @@ const dict = {
   themeSystem: { en: "System", ur: "سسٹم", roman: "System" },
   themeLight: { en: "Light", ur: "روشن", roman: "Light" },
   themeDark: { en: "Dark", ur: "گہرا", roman: "Dark" },
+
+  // WhatsApp alerts (only for emergencies decided by code)
+  waAlertTitle: { en: "🚨 Shifa alert for {name}", ur: "🚨 شفا الرٹ: {name}", roman: "🚨 Shifa alert: {name}" },
+  waAlertReport: {
+    en: "Lab report ({lab}) has a danger-level value:",
+    ur: "لیب رپورٹ ({lab}) میں خطرے کی سطح کی ویلیو ہے:",
+    roman: "Lab report ({lab}) mein khatre ki satah wali value hai:",
+  },
+  waAlertSigns: { en: "Possible emergency signs: {signs}.", ur: "ممکنہ ایمرجنسی علامات: {signs}۔", roman: "Mumkina emergency alamaat: {signs}." },
+  waAlertAction: {
+    en: "Please call Rescue 1122 or go to the nearest emergency now.",
+    ur: "فوراً ریسکیو 1122 پر کال کریں یا قریبی ایمرجنسی جائیں۔",
+    roman: "Fauran Rescue 1122 par call karein ya qareebi emergency jayein.",
+  },
+  waAlertFooter: {
+    en: "(Sent from Shifa. Checked by fixed rules, not a diagnosis.)",
+    ur: "(شفا سے بھیجا گیا۔ یہ مقررہ اصولوں کی جانچ ہے، تشخیص نہیں۔)",
+    roman: "(Shifa se bheja gaya. Ye muqarrar rules ki jaanch hai, tashkhees nahi.)",
+  },
+  waCatCardiac: { en: "chest pain / heart", ur: "سینے میں درد / دل", roman: "seenay mein dard / dil" },
+  waCatBreathing: { en: "trouble breathing", ur: "سانس میں تکلیف", roman: "saans mein takleef" },
+  waCatStroke: { en: "stroke signs", ur: "فالج کی علامات", roman: "falij ki alamaat" },
+  waCatBleeding: { en: "heavy bleeding", ur: "زیادہ خون بہنا", roman: "zyada khoon behna" },
+  waCatUnconscious: { en: "fainting / unconscious", ur: "بے ہوشی", roman: "behoshi" },
+  waCatSeizure: { en: "seizure / fits", ur: "دورہ / جھٹکے", roman: "daura / jhatke" },
+  waCatSuicide: { en: "risk of self-harm", ur: "خود کو نقصان کا خطرہ", roman: "khud ko nuqsan ka khatra" },
+  waCatPoisoning: { en: "poisoning / overdose", ur: "زہر / زیادہ دوا", roman: "zeher / zyada dawai" },
+  waCatAllergy: { en: "severe allergic reaction", ur: "شدید الرجی", roman: "shadeed allergy" },
+  waCatOther: { en: "emergency signs", ur: "ایمرجنسی علامات", roman: "emergency alamaat" },
+  waSend: { en: "Send WhatsApp alert", ur: "واٹس ایپ الرٹ بھیجیں", roman: "WhatsApp alert bhejein" },
+  waSendTo: { en: "WhatsApp {name}", ur: "{name} کو واٹس ایپ", roman: "{name} ko WhatsApp" },
+  alertContacts: { en: "Family alert numbers", ur: "فیملی الرٹ نمبر", roman: "Family alert numbers" },
+  alertContactsHint: {
+    en: "In an emergency, Shifa opens WhatsApp with a ready alert to these numbers; you tap Send. Saved only on this phone.",
+    ur: "ایمرجنسی میں شفا ان نمبروں کے لیے تیار الرٹ کے ساتھ واٹس ایپ کھولتا ہے؛ بھیجنا آپ دبائیں۔ صرف اسی فون پر محفوظ۔",
+    roman: "Emergency mein Shifa in numbers ke liye tayyar alert ke saath WhatsApp kholta hai; Send aap dabayein. Sirf isi phone par save.",
+  },
+  contactName: { en: "Name", ur: "نام", roman: "Naam" },
+  contactNamePlaceholder: { en: "e.g. Bhai", ur: "مثلاً بھائی", roman: "Maslan Bhai" },
+  contactPhone: { en: "WhatsApp number", ur: "واٹس ایپ نمبر", roman: "WhatsApp number" },
+  contactAdd: { en: "Add number", ur: "نمبر شامل کریں", roman: "Number add karein" },
+  contactRemove: { en: "Remove {name}", ur: "{name} ہٹائیں", roman: "{name} hatayein" },
+  contactBadPhone: {
+    en: "Enter a valid mobile number, e.g. 0300 1234567",
+    ur: "درست موبائل نمبر لکھیں، مثلاً 0300 1234567",
+    roman: "Sahi mobile number likhein, maslan 0300 1234567",
+  },
 } satisfies Record<string, Entry>;
 
 export type I18nKey = keyof typeof dict;

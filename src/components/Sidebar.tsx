@@ -4,8 +4,9 @@ import { useMemo, useState } from "react";
 import { ExternalLink, RotateCcw, Stethoscope, Trash, UserPlus, Users } from "lucide-react";
 import { formatDate, t, urduFont } from "@/lib/i18n";
 import { buildTrends } from "@/lib/trends";
-import type { LabReport, Lang, Person, Trend } from "@/lib/types";
+import type { AlertContact, LabReport, Lang, Person, Trend } from "@/lib/types";
 import AddPersonForm, { type NewPerson } from "./AddPersonForm";
+import AlertContacts from "./AlertContacts";
 import BackupRestore from "./BackupRestore";
 import ThemeToggle from "./ThemeToggle";
 import { Avatar } from "./PersonMenu";
@@ -42,7 +43,9 @@ export default function Sidebar({
   onLoadDemo,
   onClearChat,
   onReset,
+  contacts,
 }: {
+  contacts: AlertContact[];
   lang: Lang;
   people: Person[];
   activeId: string | null;
@@ -187,6 +190,12 @@ export default function Sidebar({
           </a>
         </section>
       )}
+
+      {/* WhatsApp numbers for one-tap emergency alerts */}
+      <section className="border-t pt-4">
+        <SectionTitle lang={lang}>{t("alertContacts", lang)}</SectionTitle>
+        <AlertContacts contacts={contacts} lang={lang} />
+      </section>
 
       {/* Appearance: System / Light / Dark */}
       <section className="border-t pt-4">

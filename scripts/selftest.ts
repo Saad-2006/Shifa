@@ -1,4 +1,6 @@
 // Data-layer self-test: npx tsx scripts/selftest.ts
+import { formatPhone, keywordAlertText, normalisePhone, reportAlertText, waLink } from "@/lib/whatsapp";
+import { detectEmergency } from "@/lib/emergency";
 import { compareIdentity, isRealName, namesMatch, parseAge, parseSex } from "@/lib/identity";
 import assert from "node:assert/strict";
 import type { Person, ExtractedTest, ExtractedReport } from "@/lib/types";
@@ -297,6 +299,33 @@ eq("trend flat", buildTrends([
   eq("checkReport keeps patient name for the card", withPatient.patient?.name, "SHAZIA BANO");
 }
 
+// ---- 7d. WhatsApp alerts (code-built text, phone formats) ----------------
+{
+  eq("phone: 0300-1234567", normalisePhone("0300-1234567"), "923001234567");
+  eq("phone: +92 300 1234567", normalisePhone("+92 300 1234567"), "923001234567");
+  eq("phone: 0092...", normalisePhone("00923001234567"), "923001234567");
+  eq("phone: 3001234567", normalisePhone("3001234567"), "923001234567");
+  eq("phone: +92 0300 typed with trunk zero", normalisePhone("+92 0300 1234567"), "923001234567");
+  eq("phone: international", normalisePhone("+1 415 555 1234"), "14155551234");
+  eq("phone: 1122 is not a WhatsApp number", normalisePhone("1122"), null);
+  eq("phone: too-short Pakistani number", normalisePhone("0300 12345"), null);
+  eq("phone: display", formatPhone("923001234567"), "+92 300 1234567");
+  eq("link: chosen contact", waLink("hi there", "923001234567"), "https://wa.me/923001234567?text=hi%20there");
+  eq("link: pick a chat", waLink("a&b"), "https://wa.me/?text=a%26b");
+  const danger = checkReport(report([T("Potassium", "6.8", "mmol/L", "3.5 - 5.1"), T("Hb", "12.5", "g/dL", "12-15.5")], "2026-10-09"), { personId: "x", source: "scan" });
+  eq("danger value -> emergency", danger.urgency, "emergency");
+  const en = reportAlertText(danger, "Ammi", "en");
+  ok("alert names the person", en.includes("Ammi"));
+  ok("alert has the danger value from code", en.includes("Potassium 6.8") && en.includes("6.0"));
+  ok("alert tells them to call 1122", en.includes("1122"));
+  ok("alert says it's not a diagnosis", /not a diagnosis/i.test(en));
+  ok("alert lists only danger values (not normal Hb)", !en.includes("Hb 12.5"));
+  ok("Roman alert", reportAlertText(danger, "Ammi", "roman").includes("Fauran Rescue 1122"));
+  ok("Urdu alert", reportAlertText(danger, "امی", "ur").includes("1122"));
+  const kw = keywordAlertText(detectEmergency("Ammi ke seenay mein dard ho raha hai").category, "Ammi", "roman");
+  ok("keyword alert names the signs", kw.includes("seenay mein dard") && kw.includes("1122"));
+}
+
 // ---- 8. Store (Node with a fake window/localStorage) ---------------------
 async function storeTests(): Promise<void> {
   const mem = new Map<string, string>();
@@ -392,6 +421,17 @@ async function storeTests(): Promise<void> {
   const r3 = shifa.importBackup(JSON.stringify(bad));
   ok("tampered report dropped", r3.ok && r3.reports === before.reports.length - 1);
   ok("orphan message dropped", !shifa.getState().messages.some((m) => m.id === "x1"));
+  shifa.resetAll();
+
+  // Family alert numbers
+  ok("add alert number", !!shifa.addContact({ name: "Bhai", phone: "923001234567" }));
+  ok("same number not added twice", shifa.addContact({ name: "Bhai 2", phone: "923001234567" }) === null);
+  shifa.addContact({ name: "Baji", phone: "923211234567" });
+  shifa.addContact({ name: "Abbu", phone: "923331234567" });
+  ok("max 3 numbers", shifa.addContact({ name: "Extra", phone: "923451234567" }) === null);
+  ok("bad number rejected", shifa.addContact({ name: "X", phone: "1122" }) === null);
+  shifa.removeContact(shifa.getState().contacts[0].id);
+  eq("remove alert number", shifa.getState().contacts.length, 2);
   shifa.resetAll();
 }
 

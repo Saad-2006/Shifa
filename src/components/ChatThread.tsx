@@ -4,7 +4,7 @@ import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "re
 import { FileText, HeartPulse, Paperclip, Phone, Siren, Square, Volume2, WifiOff } from "lucide-react";
 import { t, urduFont } from "@/lib/i18n";
 import { canSpeak, onVoicesChanged, speak, stopSpeaking } from "@/lib/speech";
-import type { ChatMessage, LabReport, Lang, Person } from "@/lib/types";
+import type { AlertContact, ChatMessage, LabReport, Lang, Person } from "@/lib/types";
 import IdentityCheckCard from "./IdentityCheckCard";
 import Markdown from "./Markdown";
 import ReportCard from "./ReportCard";
@@ -64,8 +64,10 @@ export default function ChatThread({
   people,
   onResolveIdentity,
   onWrongPerson,
+  contacts,
   footer,
 }: {
+  contacts: AlertContact[];
   messages: ChatMessage[];
   reports: LabReport[];
   lang: Lang;
@@ -162,6 +164,7 @@ export default function ChatThread({
                       onOpen={onOpenReport}
                       personName={people.find((p) => p.id === m.personId)?.name}
                       onWrongPerson={busyMessageId || m.pendingIdentity ? undefined : () => onWrongPerson(m.id)}
+                      contacts={contacts}
                     />
                   ) : (
                     <p className={`text-sm text-muted italic ${urduFont(lang)}`}>{t("reportDeleted", lang)}</p>

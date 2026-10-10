@@ -21,6 +21,8 @@ import { useShifaChat } from "@/components/useShifaChat";
 import { t } from "@/lib/i18n";
 import { shifa, useHydrated, useShifa, type ShifaState } from "@/lib/store";
 import { useAuth } from "@/lib/useAuth";
+import { detectEmergency } from "@/lib/emergency";
+import { keywordAlertText, reportAlertText } from "@/lib/whatsapp";
 
 export default function Home() {
   const hydrated = useHydrated();
@@ -70,7 +72,7 @@ function addAndSelect(p: NewPerson) {
 }
 
 function ShifaApp({ state, auth }: { state: ShifaState; auth: ReturnType<typeof useAuth> }) {
-  const { lang, people, activePersonId, reports, messages } = state;
+  const { lang, people, activePersonId, reports, messages, contacts } = state;
   const chat = useShifaChat();
   const composerRef = useRef<ComposerHandle>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -115,6 +117,19 @@ function ShifaApp({ state, auth }: { state: ShifaState; auth: ReturnType<typeof 
     setDrawerOpen(false);
   };
 
+  // WhatsApp alert text, only when the emergency was decided by CODE: a danger value in a report
+  // (labRules) or emergency words in the user's message (keyword detector). Never the AI alone.
+  const emergencyAlertText = useMemo(() => {
+    if (!activePerson) return null;
+    for (let i = personMessages.length - 1; i >= 0; i--) {
+      const m = personMessages[i];
+      const r = m.reportId ? reports.find((x) => x.id === m.reportId) : undefined;
+      if (r?.urgency === "emergency") return reportAlertText(r, activePerson.name, lang);
+      if (m.role === "user" && m.emergency) return keywordAlertText(detectEmergency(m.text).category, activePerson.name, lang);
+    }
+    return null;
+  }, [activePerson, personMessages, reports, lang]);
+
   const last = personMessages[personMessages.length - 1];
   const showFollowUps =
     !chat.busy && !showWelcome && myReports.length > 0 && last?.role === "assistant" && last.text.trim().length > 0;
@@ -123,6 +138,7 @@ function ShifaApp({ state, auth }: { state: ShifaState; auth: ReturnType<typeof 
     <>
       <AccountCard auth={auth} lang={lang} />
       <Sidebar
+      contacts={contacts}
       lang={lang}
       people={people}
       activeId={activePerson?.id ?? null}
@@ -219,7 +235,9 @@ function ShifaApp({ state, auth }: { state: ShifaState; auth: ReturnType<typeof 
           <LanguageToggle lang={lang} onChange={(l) => shifa.setLang(l)} />
         </header>
 
-        {chat.emergency && <EmergencyBanner lang={lang} onDismiss={chat.dismissEmergency} />}
+        {chat.emergency && (
+          <EmergencyBanner lang={lang} onDismiss={chat.dismissEmergency} alertText={emergencyAlertText} alertContacts={contacts} />
+        )}
 
         {showWelcome ? (
           <WelcomeState
@@ -258,6 +276,7 @@ function ShifaApp({ state, auth }: { state: ShifaState; auth: ReturnType<typeof 
             people={people}
             onResolveIdentity={(id, choice) => void chat.resolveIdentity(id, choice)}
             onWrongPerson={chat.startMove}
+            contacts={contacts}
             footer={
               showFollowUps ? <FollowUpChips lang={lang} canCompare={myReports.length >= 2} onPick={ask} /> : null
             }

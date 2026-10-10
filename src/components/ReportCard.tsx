@@ -2,7 +2,9 @@
 
 import { FileText, ShieldCheck, UserRound } from "lucide-react";
 import { formatDate, t, urduFont } from "@/lib/i18n";
-import type { LabReport, Lang } from "@/lib/types";
+import type { AlertContact, LabReport, Lang } from "@/lib/types";
+import { reportAlertText } from "@/lib/whatsapp";
+import WhatsAppAlertButtons from "./WhatsAppAlertButtons";
 import UrgencyBadge from "./UrgencyBadge";
 import ValueRow from "./ValueRow";
 import { flaggedTests } from "./reportUtils";
@@ -18,7 +20,9 @@ export default function ReportCard({
   onOpen,
   personName,
   onWrongPerson,
+  contacts = [],
 }: {
+  contacts?: AlertContact[];
   report: LabReport;
   lang: Lang;
   onAsk?: (question: string) => void;
@@ -69,6 +73,12 @@ export default function ReportCard({
       <div className="mt-3">
         <UrgencyBadge urgency={report.urgency} lang={lang} size="lg" />
       </div>
+
+      {report.urgency === "emergency" && personName && (
+        <div className="mt-2">
+          <WhatsAppAlertButtons text={reportAlertText(report, personName, lang)} contacts={contacts} lang={lang} />
+        </div>
+      )}
 
       {report.urgencyReasons.length > 0 && (
         <ul className="mt-3 space-y-1 text-sm" dir="auto">
