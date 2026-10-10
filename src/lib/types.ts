@@ -11,6 +11,38 @@ export interface Person {
   age?: number;
   sex?: Sex;
   createdAt: string; // ISO
+  reportNames?: string[]; // patient names seen on this person's confirmed reports ("Shazia Bano")
+}
+
+/** Patient details as printed on a report (display strings, not parsed). */
+export interface PatientOnReport {
+  name: string;
+  age: string;
+  sex: string;
+}
+
+/** One reason the report's patient doesn't look like the chosen family member (built by code). */
+export interface IdentityConflict {
+  kind: "name" | "sex" | "age";
+  report: string; // what the report says
+  profile: string; // what the family profile says
+}
+
+/**
+ * A report waiting for the user to confirm whose it is.
+ * "confirm": read but NOT added yet (identity didn't match), so nothing scary is shown.
+ * "move": already added; the user tapped "Not Ammi?" to move it to someone else.
+ */
+export interface PendingIdentity {
+  mode: "confirm" | "move";
+  forPersonId: string;
+  patient: PatientOnReport;
+  conflicts: IdentityConflict[];
+  suggestedPersonId?: string;
+  extracted?: ExtractedReport;
+  source?: "scan" | "sample" | "demo";
+  offline?: boolean;
+  userMessageId?: string;
 }
 
 /** One test exactly as the AI read it off the report. */
@@ -65,6 +97,7 @@ export interface LabReport {
   urgency: Urgency;
   urgencyReasons: string[]; // plain English, built by code
   flaggedCount: number; // tests with status low/high
+  patient?: PatientOnReport; // who the report says it is for
 }
 
 export type ChatRole = "user" | "assistant";
@@ -80,6 +113,7 @@ export interface ChatMessage {
   emergency?: boolean; // show the emergency banner with this message
   offline?: boolean; // answer came from the offline fallback, not Gemini
   lang?: Lang;
+  pendingIdentity?: PendingIdentity; // "is this report for Ammi?" waiting for the user
 }
 
 export interface TrendPoint {

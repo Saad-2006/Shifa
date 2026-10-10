@@ -673,7 +673,7 @@ export function checkReport(
   else if (tests.some((t) => t.severity === "marked")) urgency = "soon";
   else if (tests.some((t) => t.severity === "mild")) urgency = "routine";
 
-  return {
+  const report: LabReport = {
     id: o.id ?? newId(),
     personId: o.personId,
     createdAt,
@@ -685,4 +685,9 @@ export function checkReport(
     urgencyReasons: buildReasons(tests),
     flaggedCount: tests.filter((t) => t.status === "low" || t.status === "high").length,
   };
+  // Who the report says it's for (shown on the card so families can confirm at a glance).
+  const str = (v: unknown) => (typeof v === "string" ? v.trim() : "");
+  const patient = { name: str(x?.patientName), age: str(x?.patientAge), sex: str(x?.patientSex) };
+  if (patient.name || patient.age || patient.sex) report.patient = patient;
+  return report;
 }

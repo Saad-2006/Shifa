@@ -1,6 +1,6 @@
 "use client";
 
-import { FileText, ShieldCheck } from "lucide-react";
+import { FileText, ShieldCheck, UserRound } from "lucide-react";
 import { formatDate, t, urduFont } from "@/lib/i18n";
 import type { LabReport, Lang } from "@/lib/types";
 import UrgencyBadge from "./UrgencyBadge";
@@ -16,11 +16,17 @@ export default function ReportCard({
   lang,
   onAsk,
   onOpen,
+  personName,
+  onWrongPerson,
 }: {
   report: LabReport;
   lang: Lang;
   onAsk?: (question: string) => void;
   onOpen?: (reportId: string) => void;
+  /** Family member this report is filed under. */
+  personName?: string;
+  /** "Not Ammi?": ask whose report it is and move it. */
+  onWrongPerson?: () => void;
 }) {
   const flagged = flaggedTests(report);
   const shown = flagged.slice(0, 4);
@@ -38,6 +44,27 @@ export default function ReportCard({
         <span aria-hidden>·</span>
         <bdi className="shrink-0 whitespace-nowrap">{formatDate(report.reportDate, lang)}</bdi>
       </header>
+
+      {report.patient && (report.patient.name || report.patient.age || report.patient.sex) && (
+        <p className="mt-1.5 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-sm text-muted">
+          <UserRound size={15} aria-hidden className="shrink-0" />
+          <span className={urduFont(lang)}>{t("patientOnReport", lang)}:</span>
+          <bdi className="font-medium text-ink">
+            {[report.patient.name, report.patient.age, report.patient.sex === "F" ? t("sexF", lang) : report.patient.sex === "M" ? t("sexM", lang) : report.patient.sex]
+              .filter(Boolean)
+              .join(" · ")}
+          </bdi>
+          {onWrongPerson && personName && (
+            <button
+              type="button"
+              onClick={onWrongPerson}
+              className={`min-h-9 rounded-full px-1.5 underline underline-offset-4 hover:text-ink ${urduFont(lang)}`}
+            >
+              {t("notPerson", lang, { name: personName })}
+            </button>
+          )}
+        </p>
+      )}
 
       <div className="mt-3">
         <UrgencyBadge urgency={report.urgency} lang={lang} size="lg" />

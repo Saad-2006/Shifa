@@ -325,6 +325,44 @@ const dict = {
     ur: "یہ شفا کی بیک اپ فائل نہیں ہے۔ شفا سے محفوظ کی گئی .json فائل منتخب کریں۔",
     roman: "Ye Shifa ki backup file nahi hai. Shifa se save ki hui .json file chunein.",
   },
+
+  // Patient identity check (whose report is this?)
+  idTitle: { en: "Is this report for {name}?", ur: "کیا یہ رپورٹ {name} کی ہے؟", roman: "Kya ye report {name} ki hai?" },
+  idBody: {
+    en: "The details on the report don't match {name}. Nothing has been added yet.",
+    ur: "رپورٹ پر لکھی تفصیل {name} سے نہیں ملتی۔ ابھی کچھ شامل نہیں کیا گیا۔",
+    roman: "Report par likhi tafseel {name} se nahi milti. Abhi kuch add nahi kiya gaya.",
+  },
+  idOnReport: { en: "On the report", ur: "رپورٹ پر", roman: "Report par" },
+  idConflictSex: {
+    en: "Report says {report}, but {name} is {profile}",
+    ur: "رپورٹ پر {report} لکھا ہے، مگر {name} {profile} ہیں",
+    roman: "Report par {report} likha hai, magar {name} {profile} hain",
+  },
+  idConflictAge: {
+    en: "Report says age {report}, but {name} is {profile}",
+    ur: "رپورٹ پر عمر {report} ہے، مگر {name} کی عمر {profile} ہے",
+    roman: "Report par umar {report} hai, magar {name} ki umar {profile} hai",
+  },
+  idConflictName: {
+    en: "Name on report is {report}; {name}'s reports say {profile}",
+    ur: "رپورٹ پر نام {report} ہے؛ {name} کی رپورٹس پر {profile} لکھا ہوتا ہے",
+    roman: "Report par naam {report} hai; {name} ki reports par {profile} likha hota hai",
+  },
+  idAddTo: { en: "Add to {name}", ur: "{name} میں شامل کریں", roman: "{name} mein add karein" },
+  idAddAnyway: { en: "Add to {name} anyway", ur: "پھر بھی {name} میں شامل کریں", roman: "Phir bhi {name} mein add karein" },
+  idNewProfile: { en: "New profile: {name}", ur: "نئی پروفائل: {name}", roman: "Nayi profile: {name}" },
+  idNewProfilePlain: { en: "New family member", ur: "نیا فرد", roman: "Naya family member" },
+  idSomeoneElse: { en: "Someone else", ur: "کوئی اور", roman: "Koi aur" },
+  idCancel: { en: "Cancel, don't add it", ur: "منسوخ، شامل نہ کریں", roman: "Cancel, add na karein" },
+  idCancelled: { en: "Report not added.", ur: "رپورٹ شامل نہیں کی گئی۔", roman: "Report add nahi ki gayi." },
+  idMoveTitle: { en: "Whose report is this?", ur: "یہ رپورٹ کس کی ہے؟", roman: "Ye report kis ki hai?" },
+  idMoveKeep: { en: "Keep it with {name}", ur: "{name} کے پاس رہنے دیں", roman: "{name} ke paas rehne dein" },
+  patientOnReport: { en: "On report", ur: "رپورٹ پر", roman: "Report par" },
+  notPerson: { en: "Not {name}?", ur: "{name} نہیں؟", roman: "{name} nahi?" },
+  familyMember: { en: "Family member", ur: "خاندان کا فرد", roman: "Family member" },
+  sexF: { en: "Female", ur: "خاتون", roman: "Female" },
+  sexM: { en: "Male", ur: "مرد", roman: "Male" },
 } satisfies Record<string, Entry>;
 
 export type I18nKey = keyof typeof dict;

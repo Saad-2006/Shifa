@@ -255,6 +255,9 @@ function ShifaApp({ state, auth }: { state: ShifaState; auth: ReturnType<typeof 
             scan={chat.scan}
             onAsk={ask}
             onOpenReport={openReport}
+            people={people}
+            onResolveIdentity={(id, choice) => void chat.resolveIdentity(id, choice)}
+            onWrongPerson={chat.startMove}
             footer={
               showFollowUps ? <FollowUpChips lang={lang} canCompare={myReports.length >= 2} onPick={ask} /> : null
             }
