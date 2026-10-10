@@ -1,7 +1,7 @@
 // Client state for Shifa, persisted to localStorage ("shifa:v1", or a per-Google-account key). SSR-safe:
 // nothing touches `window` at module load, and the server snapshot is one constant EMPTY object.
 import { useSyncExternalStore } from "react";
-import type { ChatMessage, LabReport, Lang, Person, Sex } from "@/lib/types";
+import type { AlertContact, ChatMessage, LabReport, Lang, Person, Sex } from "@/lib/types";
 import { newId } from "@/lib/labRules";
 import { buildDemoFamily } from "@/lib/demoData";
 import { displayName, namesMatch } from "@/lib/identity";
@@ -14,6 +14,7 @@ export interface ShifaState {
   activePersonId: string | null;
   reports: LabReport[];
   messages: ChatMessage[];
+  contacts: AlertContact[]; // WhatsApp numbers for emergency alerts (max 3)
 }
 
 const GUEST_KEY = "shifa:v1";
@@ -22,6 +23,7 @@ const accountKey = (id: string) => `shifa:v1:acct:${id.replace(/[^A-Za-z0-9_-]/g
 let storageKey = GUEST_KEY;
 let account: string | null = null;
 const MAX_MESSAGES_PER_PERSON = 200;
+const MAX_CONTACTS = 3;
 const LANGS: Lang[] = ["en", "ur", "roman"];
 
 // One constant object: the server snapshot and the "nothing stored yet" state. Never mutated by
@@ -34,6 +36,7 @@ const EMPTY: ShifaState = {
   activePersonId: null,
   reports: [],
   messages: [],
+  contacts: [],
 };
 
 let state: ShifaState = EMPTY;
@@ -63,6 +66,9 @@ function sanitize(raw: unknown): ShifaState {
       typeof r.activePersonId === "string" && people.some((p) => p.id === r.activePersonId) ? r.activePersonId : people[0]?.id ?? null,
     reports: arr<LabReport>(r.reports).filter((x) => x && typeof x.id === "string" && Array.isArray(x.tests)),
     messages: arr<ChatMessage>(r.messages).filter((m) => m && typeof m.id === "string"),
+    contacts: arr<AlertContact>(r.contacts)
+      .filter((c) => c && typeof c.id === "string" && typeof c.name === "string" && /^\d{10,15}$/.test(String(c.phone)))
+      .slice(0, MAX_CONTACTS),
   };
 }
 
@@ -364,6 +370,7 @@ export const shifa = {
       commit({
         ...s,
         onboarded: true,
+        contacts: s.contacts.length ? s.contacts : incoming.contacts,
         people: [...s.people, ...people],
         reports: [...s.reports, ...reports],
         messages: [...s.messages, ...messages],
@@ -371,6 +378,20 @@ export const shifa = {
       });
     }
     return { ok: true, people: people.length, reports: reports.length, messages: messages.length, exportedAt: isStr(f.exportedAt) ? f.exportedAt : "" };
+  },
+
+  /** Save a WhatsApp alert number (already normalised to digits). Max 3; same number not added twice. */
+  addContact: (c: { name: string; phone: string }): AlertContact | null => {
+    const s = current();
+    if (!/^\d{10,15}$/.test(c.phone) || s.contacts.length >= MAX_CONTACTS || s.contacts.some((x) => x.phone === c.phone)) return null;
+    const contact: AlertContact = { id: newId(), name: c.name.trim() || c.phone, phone: c.phone };
+    commit({ ...s, contacts: [...s.contacts, contact] });
+    return contact;
+  },
+
+  removeContact: (id: string): void => {
+    const s = current();
+    commit({ ...s, contacts: s.contacts.filter((c) => c.id !== id) });
   },
 
   /** The signed-in Google account id (null = guest). */

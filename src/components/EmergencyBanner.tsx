@@ -3,7 +3,8 @@
 import { Phone, Siren } from "lucide-react";
 import { EMERGENCY_CONTACTS } from "@/lib/emergency";
 import { t, urduFont } from "@/lib/i18n";
-import type { Lang } from "@/lib/types";
+import type { AlertContact, Lang } from "@/lib/types";
+import WhatsAppAlertButtons from "./WhatsAppAlertButtons";
 
 // Used only if the emergency module ships no contacts.
 const FALLBACK_CONTACTS = [
@@ -12,7 +13,18 @@ const FALLBACK_CONTACTS = [
 ];
 
 /** Solid red banner pinned to the top of the chat. Triggered by code (keywords / danger values) or the AI flag. */
-export default function EmergencyBanner({ lang, onDismiss }: { lang: Lang; onDismiss: () => void }) {
+export default function EmergencyBanner({
+  lang,
+  onDismiss,
+  alertText,
+  alertContacts = [],
+}: {
+  lang: Lang;
+  onDismiss: () => void;
+  /** Code-built WhatsApp alert; only for emergencies decided by code (danger value or keywords). */
+  alertText?: string | null;
+  alertContacts?: AlertContact[];
+}) {
   const contacts = EMERGENCY_CONTACTS.length > 0 ? EMERGENCY_CONTACTS : FALLBACK_CONTACTS;
   return (
     <div role="alert" className="animate-fade-in bg-emergency text-white">
@@ -36,6 +48,11 @@ export default function EmergencyBanner({ lang, onDismiss }: { lang: Lang; onDis
             </a>
           ))}
         </div>
+        {alertText && (
+          <div className="mt-2">
+            <WhatsAppAlertButtons text={alertText} contacts={alertContacts} lang={lang} onRed />
+          </div>
+        )}
         <div className="mt-2 flex justify-end">
           <button
             type="button"

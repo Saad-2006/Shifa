@@ -14,6 +14,13 @@ export interface Person {
   reportNames?: string[]; // patient names seen on this person's confirmed reports ("Shazia Bano")
 }
 
+/** A family member's WhatsApp number for one-tap emergency alerts (stored only on the phone). */
+export interface AlertContact {
+  id: string;
+  name: string;
+  phone: string; // digits with country code, e.g. "923001234567"
+}
+
 /** Patient details as printed on a report (display strings, not parsed). */
 export interface PatientOnReport {
   name: string;
