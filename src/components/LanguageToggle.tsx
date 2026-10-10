@@ -38,7 +38,7 @@ export default function LanguageToggle({
             aria-label={o.full}
             onClick={() => onChange(o.value)}
             className={`inline-flex h-11 items-center justify-center rounded-full font-medium leading-none transition-colors ${
-              big ? "w-20" : "w-[3.75rem]"
+              big ? "w-20" : "w-16"
             } ${active ? "bg-ink text-white" : "text-muted hover:text-ink"} ${o.className ?? ""}`}
           >
             <span dir="auto" className="block leading-none">

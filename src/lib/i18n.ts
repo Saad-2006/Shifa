@@ -186,6 +186,8 @@ const dict = {
   // Urgency
   urgEmergency: { en: "Emergency", ur: "ایمرجنسی", roman: "Emergency" },
   urgSoon: { en: "See a doctor soon", ur: "جلد ڈاکٹر کو دکھائیں", roman: "Jald doctor ko dikhayein" },
+  // Short form for small badges (report lists), so the pill never overflows on a phone.
+  urgSoonShort: { en: "Doctor soon", ur: "جلد ڈاکٹر", roman: "Jald doctor" },
   urgRoutine: { en: "Not urgent", ur: "فوری نہیں", roman: "Fori nahi" },
   urgNormal: { en: "Normal", ur: "نارمل", roman: "Normal" },
   actEmergency: {

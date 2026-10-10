@@ -18,10 +18,11 @@ export default function UrgencyBadge({
   if (size === "sm") {
     return (
       <span
-        className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium whitespace-nowrap ${TONE_CLASSES[meta.tone]}`}
+        title={t(meta.label, lang)}
+        className={`inline-flex max-w-full min-w-0 items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium ${TONE_CLASSES[meta.tone]}`}
       >
-        <Icon size={13} aria-hidden strokeWidth={2.25} />
-        <span className={urduFont(lang)}>{t(meta.label, lang)}</span>
+        <Icon size={13} aria-hidden strokeWidth={2.25} className="shrink-0" />
+        <span className={`truncate ${urduFont(lang)}`}>{t(meta.short, lang)}</span>
       </span>
     );
   }

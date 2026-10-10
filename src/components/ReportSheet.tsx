@@ -69,7 +69,7 @@ export default function ReportSheet({
               {report.labName || t("labReport", lang)}
             </h2>
             <p className="text-sm text-muted">
-              {formatDate(report.reportDate, lang)} · <span className={urduFont(lang)}>{t("allValues", lang)}</span> (
+              <bdi>{formatDate(report.reportDate, lang)}</bdi> · <span className={urduFont(lang)}>{t("allValues", lang)}</span> (
               {report.tests.length})
             </p>
           </div>

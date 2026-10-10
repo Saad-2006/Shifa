@@ -134,8 +134,8 @@ export default function Sidebar({
                     onClick={() => onOpenReport(r.id)}
                     className="w-full rounded-card border bg-bg p-3 text-start transition-colors hover:border-ink/25"
                   >
-                    <div className="flex items-center justify-between gap-2 text-sm">
-                      <span className="font-medium whitespace-nowrap">{formatDate(r.reportDate, lang)}</span>
+                    <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1 text-sm">
+                      <bdi className="font-medium whitespace-nowrap">{formatDate(r.reportDate, lang)}</bdi>
                       <UrgencyBadge urgency={r.urgency} lang={lang} />
                     </div>
                     <div className="mt-1 flex items-center justify-between gap-2 text-sm text-muted">

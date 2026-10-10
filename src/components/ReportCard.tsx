@@ -36,7 +36,7 @@ export default function ReportCard({
         <FileText size={16} aria-hidden className="shrink-0" />
         <span className="truncate font-medium text-ink">{report.labName || t("labReport", lang)}</span>
         <span aria-hidden>·</span>
-        <span className="shrink-0 whitespace-nowrap">{formatDate(report.reportDate, lang)}</span>
+        <bdi className="shrink-0 whitespace-nowrap">{formatDate(report.reportDate, lang)}</bdi>
       </header>
 
       <div className="mt-3">
