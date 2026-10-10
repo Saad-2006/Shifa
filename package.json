@@ -10,7 +10,8 @@
     "selftest": "tsx scripts/selftest.ts && tsx scripts/selftest-safety.ts",
     "eval": "tsx scripts/eval-extraction.ts",
     "models": "node scripts/check-models.mjs",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "eval:draft": "tsx scripts/eval-extraction.ts --draft"
   },
   "dependencies": {
     "fuse.js": "^7.5.0",
