@@ -4,6 +4,7 @@ import { useSyncExternalStore } from "react";
 import type { ChatMessage, LabReport, Lang, Person, Sex } from "@/lib/types";
 import { newId } from "@/lib/labRules";
 import { buildDemoFamily } from "@/lib/demoData";
+import { displayName, namesMatch } from "@/lib/identity";
 
 export interface ShifaState {
   version: 1;
@@ -198,7 +199,8 @@ const STATUSES = new Set(["low", "high", "normal", "unknown"]);
 const isStr = (x: unknown): x is string => typeof x === "string";
 
 // A restored file is untrusted: keep only records the UI can render safely.
-const validPerson = (p: Person) => isStr(p.name) && isStr(p.relation);
+const validPerson = (p: Person) =>
+  isStr(p.name) && isStr(p.relation) && (p.reportNames === undefined || (Array.isArray(p.reportNames) && p.reportNames.every(isStr)));
 const validReport = (r: LabReport) =>
   isStr(r.personId) &&
   URGENCIES.has(r.urgency) &&
@@ -233,6 +235,39 @@ export const shifa = {
     const hasActive = s.activePersonId !== null && s.people.some((x) => x.id === s.activePersonId);
     commit({ ...s, people: [...s.people, person], activePersonId: hasActive ? s.activePersonId : person.id });
     return person;
+  },
+
+  /** Patch a family member (age/sex learned from a report, a rename...). */
+  updatePerson: (id: string, patch: Partial<Pick<Person, "name" | "relation" | "age" | "sex" | "reportNames">>): void => {
+    const s = current();
+    if (!s.people.some((p) => p.id === id)) return;
+    commit({ ...s, people: s.people.map((p) => (p.id === id ? { ...p, ...patch, id: p.id } : p)) });
+  },
+
+  /** Remember the name printed on this person's confirmed report, so later reports can be checked. */
+  rememberReportName: (personId: string, name: string): void => {
+    const shown = displayName(name);
+    const s = current();
+    const person = s.people.find((p) => p.id === personId);
+    if (!shown || !person) return;
+    const names = person.reportNames ?? [];
+    if (names.some((n) => namesMatch(n, shown))) return;
+    commit({ ...s, people: s.people.map((p) => (p.id === personId ? { ...p, reportNames: [...names, shown].slice(-5) } : p)) });
+  },
+
+  /** Move chat messages (e.g. a report card and its upload) to another family member. */
+  moveMessages: (ids: string[], personId: string): void => {
+    const s = current();
+    const set = new Set(ids);
+    if (!s.people.some((p) => p.id === personId)) return;
+    commit({ ...s, messages: s.messages.map((m) => (set.has(m.id) ? { ...m, personId } : m)) });
+  },
+
+  /** Give a report to another family member (it was added to the wrong person). */
+  moveReport: (reportId: string, personId: string): void => {
+    const s = current();
+    if (!s.people.some((p) => p.id === personId)) return;
+    commit({ ...s, reports: s.reports.map((r) => (r.id === reportId ? { ...r, personId } : r)) });
   },
 
   setActivePerson: (id: string): void => {

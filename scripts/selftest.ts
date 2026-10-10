@@ -1,6 +1,7 @@
 // Data-layer self-test: npx tsx scripts/selftest.ts
+import { compareIdentity, isRealName, namesMatch, parseAge, parseSex } from "@/lib/identity";
 import assert from "node:assert/strict";
-import type { ExtractedTest, ExtractedReport } from "@/lib/types";
+import type { Person, ExtractedTest, ExtractedReport } from "@/lib/types";
 import { canonicalKey, checkTest, checkReport, parseNumber, parseRange, URGENCY_RANK } from "@/lib/labRules";
 import { buildTrends } from "@/lib/trends";
 import { SAMPLE_EXTRACTION, buildDemoFamily } from "@/lib/demoData";
@@ -250,6 +251,50 @@ eq("trend flat", buildTrends([
   const minhaj = checkReport(report([T("HbA1C (Glycosylated Hemoglobin)", "7.2", "%", "(See Below)"), T("URIC ACID (SERUM)", "4.9", "mg/dL", "2.4 - 5.7")]), { personId: "x", source: "scan" });
   eq("Minhaj report: urgency soon (not normal)", minhaj.urgency, "soon");
   eq("Minhaj report: 1 flagged", minhaj.flaggedCount, 1);
+}
+
+// ---- 7c. Patient identity check (whose report is this?) -------------------
+{
+  ok("names: same person, extra surname", namesMatch("SHAZIA BANO", "Shazia"));
+  ok("names: titles ignored", namesMatch("Mrs. Shazia Bano", "shazia bano"));
+  ok("names: Muhammad/Mohammad spelling", namesMatch("Mohammad Ashraf", "Muhammad Ashraf"));
+  ok("names: 'w/o husband' ignored", namesMatch("Shazia w/o Ahmed Ali", "Shazia Bano"));
+  ok("names: shared common part is not a match", !namesMatch("Shazia Bano", "Nasreen Bano"));
+  ok("names: different first names", !namesMatch("Muhammad Ashraf", "Muhammad Akram"));
+  ok("names: relation words aren't real names", !isRealName("Ammi") && !isRealName("Me") && isRealName("Shazia"));
+  eq("age: '53 Year(s)'", parseAge("53 Year(s)"), 53);
+  eq("age: '58 Y'", parseAge("58 Y"), 58);
+  eq("age: '5 Months'", Math.round((parseAge("5 Months") ?? 0) * 12), 5);
+  eq("age: '10 Days' < 1 year", (parseAge("10 Days") ?? 9) < 0.1, true);
+  eq("age: plain '62'", parseAge("62"), 62);
+  eq("sex: 'Female'", parseSex("Female"), "F");
+  eq("sex: 'M'", parseSex("M"), "M");
+  eq("sex: Urdu", parseSex("خاتون"), "F");
+
+  const now = new Date("2026-10-10T12:00:00Z");
+  const P = (id: string, name: string, age?: number, sex?: "M" | "F", reportNames?: string[]) =>
+    ({ id, name, relation: "", age, sex, createdAt: "", reportNames }) as Person;
+  const ammi = P("a", "Ammi", 58, "F");
+  const abbu = P("b", "Abbu", 62, "M");
+  const me = P("m", "Me");
+  const fam = [ammi, abbu, me];
+  const minhaj = { ...report([T("HbA1c", "7.2", "%", "<5.7")], "2026-10-09"), patientName: "SHAZIA BANO", patientAge: "53 Year(s)", patientSex: "Female" };
+  const onAbbu = compareIdentity(minhaj, abbu, fam, now);
+  eq("Abbu active + Female 53 report -> mismatch", onAbbu.status, "mismatch");
+  ok("mismatch lists sex and age", onAbbu.conflicts.some((c) => c.kind === "sex") && onAbbu.conflicts.some((c) => c.kind === "age"));
+  eq("Ammi (58 F) is 5 years off -> no suggestion", onAbbu.suggestedPersonId, undefined);
+  const sample = { ...report([T("Hb", "10.6", "g/dL", "12-15.5")], "2026-10-08"), patientName: "Sample Patient", patientAge: "58 Years", patientSex: "F" };
+  eq("Abbu active + sample (58 F) -> suggests Ammi", compareIdentity(sample, abbu, fam, now).suggestedPersonId, "a");
+  eq("Ammi active + sample (58 F) -> ok", compareIdentity(sample, ammi, fam, now).status, "ok");
+  eq("old report: age adjusted for report date", compareIdentity({ ...sample, reportDate: "2022-10-08", patientAge: "54 Y" }, ammi, fam, now).status, "ok");
+  eq("no patient details -> unknown", compareIdentity({ ...sample, patientName: "", patientAge: "", patientSex: "" }, abbu, fam, now).status, "unknown");
+  const known = P("a", "Ammi", undefined, "F", ["Shazia Bano"]);
+  eq("known name matches -> ok", compareIdentity(minhaj, known, [known, abbu], now).status, "ok");
+  const other = { ...minhaj, patientName: "Nasreen Akhtar" };
+  ok("known name differs -> name conflict", compareIdentity(other, known, [known, abbu], now).conflicts.some((c) => c.kind === "name"));
+  eq("profile with no details -> ok (nothing to contradict)", compareIdentity(minhaj, me, fam, now).status, "ok");
+  const withPatient = checkReport(minhaj, { personId: "a", source: "scan" });
+  eq("checkReport keeps patient name for the card", withPatient.patient?.name, "SHAZIA BANO");
 }
 
 // ---- 8. Store (Node with a fake window/localStorage) ---------------------

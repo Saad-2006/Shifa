@@ -4,10 +4,12 @@ import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "re
 import { FileText, HeartPulse, Paperclip, Phone, Siren, Square, Volume2, WifiOff } from "lucide-react";
 import { t, urduFont } from "@/lib/i18n";
 import { canSpeak, onVoicesChanged, speak, stopSpeaking } from "@/lib/speech";
-import type { ChatMessage, LabReport, Lang } from "@/lib/types";
+import type { ChatMessage, LabReport, Lang, Person } from "@/lib/types";
+import IdentityCheckCard from "./IdentityCheckCard";
 import Markdown from "./Markdown";
 import ReportCard from "./ReportCard";
 import ScanProgress, { TypingDots } from "./ScanProgress";
+import type { IdentityChoice } from "./useShifaChat";
 
 export interface ScanState {
   messageId: string;
@@ -59,6 +61,9 @@ export default function ChatThread({
   scan,
   onAsk,
   onOpenReport,
+  people,
+  onResolveIdentity,
+  onWrongPerson,
   footer,
 }: {
   messages: ChatMessage[];
@@ -68,6 +73,9 @@ export default function ChatThread({
   scan: ScanState | null;
   onAsk: (question: string) => void;
   onOpenReport: (reportId: string) => void;
+  people: Person[];
+  onResolveIdentity: (messageId: string, choice: IdentityChoice) => void;
+  onWrongPerson: (messageId: string) => void;
   footer?: ReactNode;
 }) {
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -86,7 +94,7 @@ export default function ChatThread({
   }, []);
 
   const last = messages[messages.length - 1];
-  const contentKey = `${messages.length}|${last?.id}|${last?.text.length}|${last?.reportId}|${scan?.step}|${footer ? 1 : 0}`;
+  const contentKey = `${messages.length}|${last?.id}|${last?.text.length}|${last?.reportId}|${last?.pendingIdentity?.mode}|${scan?.step}|${footer ? 1 : 0}`;
 
   // Auto-scroll on new content, unless the user has scrolled up to read.
   useLayoutEffect(() => {
@@ -147,16 +155,33 @@ export default function ChatThread({
               <div className="min-w-0 flex-1 space-y-3">
                 {m.reportId &&
                   (report ? (
-                    <ReportCard report={report} lang={lang} onAsk={busyMessageId ? undefined : onAsk} onOpen={onOpenReport} />
+                    <ReportCard
+                      report={report}
+                      lang={lang}
+                      onAsk={busyMessageId ? undefined : onAsk}
+                      onOpen={onOpenReport}
+                      personName={people.find((p) => p.id === m.personId)?.name}
+                      onWrongPerson={busyMessageId || m.pendingIdentity ? undefined : () => onWrongPerson(m.id)}
+                    />
                   ) : (
                     <p className={`text-sm text-muted italic ${urduFont(lang)}`}>{t("reportDeleted", lang)}</p>
                   ))}
+
+                {m.pendingIdentity && (
+                  <IdentityCheckCard
+                    pending={m.pendingIdentity}
+                    people={people}
+                    lang={lang}
+                    disabled={busyMessageId !== null}
+                    onResolve={(choice) => onResolveIdentity(m.id, choice)}
+                  />
+                )}
 
                 {m.emergency && <EmergencyCallout lang={msgLang} />}
 
                 {!hasText && isBusy && (scanning ? <ScanProgress step={scan.step} lang={msgLang} /> : <TypingDots label={t("typing", msgLang)} />)}
 
-                {!hasText && !isBusy && !m.reportId && (
+                {!hasText && !isBusy && !m.reportId && !m.pendingIdentity && (
                   <p className={`text-muted ${urduFont(msgLang)}`}>{t("errChat", msgLang)}</p>
                 )}
 

@@ -10,6 +10,7 @@ import { SAMPLE_EXTRACTION } from "@/lib/demoData";
 import { detectEmergency, EMERGENCY_SENTINEL } from "@/lib/emergency";
 import { blobToBase64, fileToPayload, UploadError, type UploadPayload } from "@/lib/image";
 import { t, type I18nKey } from "@/lib/i18n";
+import { compareIdentity, displayName, parseAge, parseSex, readPatient } from "@/lib/identity";
 import { checkReport } from "@/lib/labRules";
 import { shifa } from "@/lib/store";
 import type {
@@ -19,6 +20,7 @@ import type {
   ExtractRequest,
   ExtractResponse,
   LabReport,
+  PatientOnReport,
   Person,
 } from "@/lib/types";
 import type { ScanState } from "./ChatThread";
@@ -86,14 +88,50 @@ function chatErrorKey(code: ErrCode): I18nKey {
 }
 
 /** Active person, or auto-create "Me" (Self) when the family is empty. */
-function ensurePerson(): Person {
+function ensurePersonInfo(): { person: Person; created: boolean } {
   const s = shifa.getState();
   let person = s.people.find((p) => p.id === s.activePersonId) ?? s.people[0];
+  const created = !person;
   if (!person) person = shifa.addPerson({ name: "Me", relation: "Self" });
   if (shifa.getState().activePersonId !== person.id) shifa.setActivePerson(person.id);
   if (!shifa.getState().onboarded) shifa.completeOnboarding();
+  return { person, created };
+}
+const ensurePerson = (): Person => ensurePersonInfo().person;
+
+/**
+ * Learn from a confirmed report: remember the printed name and fill in a missing age or sex.
+ * `rename` is only for a profile we just auto-created ("Me"), which takes the report's name.
+ */
+function learnPatient(personId: string, patient: PatientOnReport, rename = false): void {
+  const person = shifa.getState().people.find((p) => p.id === personId);
+  if (!person) return;
+  const name = displayName(patient.name);
+  const age = parseAge(patient.age);
+  const sex = parseSex(patient.sex);
+  const patch: Partial<Pick<Person, "name" | "relation" | "age" | "sex">> = {};
+  if (rename && name) Object.assign(patch, { name, relation: "" });
+  if (typeof person.age !== "number" && age !== null && age >= 1) patch.age = Math.round(age);
+  if (!person.sex && sex) patch.sex = sex;
+  if (Object.keys(patch).length) shifa.updatePerson(personId, patch);
+  if (name) shifa.rememberReportName(personId, name);
+}
+
+/** New family member from the details printed on a report. */
+function personFromPatient(patient: PatientOnReport, fallbackName: string): Person {
+  const age = parseAge(patient.age);
+  const sex = parseSex(patient.sex);
+  const person = shifa.addPerson({
+    name: displayName(patient.name) || fallbackName,
+    relation: "",
+    ...(age !== null && age >= 1 ? { age: Math.round(age) } : {}),
+    ...(sex ? { sex } : {}),
+  });
+  if (patient.name) shifa.rememberReportName(person.id, patient.name);
   return person;
 }
+
+export type IdentityChoice = { kind: "person"; personId: string } | { kind: "new" } | { kind: "cancel" };
 
 function freshPerson(fallback: Person): Person {
   return shifa.getState().people.find((p) => p.id === fallback.id) ?? fallback;
@@ -210,8 +248,8 @@ export function useShifaChat() {
     const lang = shifa.getState().lang;
     let placeholderId: string | null = null;
     try {
-      const person = ensurePerson();
-      shifa.addMessage({ personId: person.id, role: "user", text: "", attachmentName: opts.attachmentName });
+      const { person, created } = ensurePersonInfo();
+      const userMsg = shifa.addMessage({ personId: person.id, role: "user", text: "", attachmentName: opts.attachmentName });
       const placeholder = shifa.addMessage({ personId: person.id, role: "assistant", text: "", lang });
       placeholderId = placeholder.id;
       setBusyMessageId(placeholder.id);
@@ -258,47 +296,160 @@ export function useShifaChat() {
         return fail("errNotReport");
       }
 
-      // 2. Code checks every value (no AI).
-      setScan({ messageId: placeholder.id, step: 1 });
-      await wait(CHECK_STEP_MS);
-      const report = checkReport(extracted, { personId: person.id, source: opts.sample ? "sample" : "scan" });
-      shifa.addReport(report);
-      const isEmergency = report.urgency === "emergency";
-      shifa.updateMessage(placeholder.id, {
-        reportId: report.id,
-        ...(offline ? { offline: true } : {}),
-        ...(isEmergency ? { emergency: true } : {}),
-      });
-      if (isEmergency) setEmergency(true);
-
-      // 3. AI explains, grounded in the checked report.
-      setScan({ messageId: placeholder.id, step: 2 });
-      // Use the language selected now: the user may have switched it while the report was being read.
-      const explainLang = shifa.getState().lang;
-      if (explainLang !== lang) shifa.updateMessage(placeholder.id, { lang: explainLang });
-      try {
-        await streamChat(
-          {
-            lang: explainLang,
-            person: freshPerson(person),
-            reports: reportsForRequest(person.id, report.id),
-            messages: [],
-            task: "explain_report",
-            focusReportId: report.id,
-          },
-          placeholder.id,
-          raiseEmergency,
-        );
-      } catch (e) {
-        const c = e instanceof FlowError ? e.code : "other";
-        fail(c === "rate_limited" || c === "unauthorized" || c === "sign_in_required" ? chatErrorKey(c) : "errExplain");
+      // 2. Code checks WHO the report is for before showing anything (no AI), so a wrong
+      //    report never puts a scary result on the wrong family member.
+      const source: LabReport["source"] = opts.sample ? "sample" : "scan";
+      if (created) {
+        learnPatient(person.id, readPatient(extracted).shown, true);
+      } else {
+        const verdict = compareIdentity(extracted, freshPerson(person), shifa.getState().people);
+        if (verdict.status === "mismatch") {
+          shifa.updateMessage(placeholder.id, {
+            pendingIdentity: {
+              mode: "confirm",
+              forPersonId: person.id,
+              patient: verdict.patient,
+              conflicts: verdict.conflicts,
+              ...(verdict.suggestedPersonId ? { suggestedPersonId: verdict.suggestedPersonId } : {}),
+              extracted,
+              source,
+              offline,
+              userMessageId: userMsg.id,
+            },
+          });
+          return; // wait for the user's choice (resolveIdentity)
+        }
       }
+      await completeScan(person.id, placeholder.id, extracted, source, offline, lang);
     } catch (e) {
       console.error("[shifa] scan flow failed", e);
       if (placeholderId) shifa.updateMessage(placeholderId, { text: t("errOther", lang) });
     } finally {
       finish();
     }
+  };
+
+  /** Steps 3-4: code checks every value, then the AI explains, for the confirmed person. */
+  const completeScan = async (
+    personId: string,
+    messageId: string,
+    extracted: ExtractedReport,
+    source: LabReport["source"],
+    offline: boolean,
+    lang: ReturnType<typeof shifa.getState>["lang"],
+  ) => {
+    learnPatient(personId, readPatient(extracted).shown);
+    setBusyMessageId(messageId);
+    setScan({ messageId, step: 1 });
+    await wait(CHECK_STEP_MS);
+    const report = checkReport(extracted, { personId, source });
+    shifa.addReport(report);
+    const isEmergency = report.urgency === "emergency";
+    shifa.updateMessage(messageId, {
+      reportId: report.id,
+      ...(offline ? { offline: true } : {}),
+      ...(isEmergency ? { emergency: true } : {}),
+    });
+    if (isEmergency) setEmergency(true);
+    setScan({ messageId, step: 2 });
+    await explainInto(personId, report.id, messageId, lang);
+  };
+
+  /** AI explains a checked report into an assistant message, grounded in that person's reports. */
+  const explainInto = async (
+    personId: string,
+    reportId: string,
+    messageId: string,
+    lang: ReturnType<typeof shifa.getState>["lang"],
+  ) => {
+    // Use the language selected now: the user may have switched it while the report was being read.
+    const explainLang = shifa.getState().lang;
+    if (explainLang !== lang) shifa.updateMessage(messageId, { lang: explainLang });
+    const person = shifa.getState().people.find((p) => p.id === personId);
+    if (!person) return;
+    try {
+      await streamChat(
+        {
+          lang: explainLang,
+          person,
+          reports: reportsForRequest(personId, reportId),
+          messages: [],
+          task: "explain_report",
+          focusReportId: reportId,
+        },
+        messageId,
+        raiseEmergency,
+      );
+    } catch (e) {
+      const c = e instanceof FlowError ? e.code : "other";
+      shifa.updateMessage(messageId, {
+        text: t(c === "rate_limited" || c === "unauthorized" || c === "sign_in_required" ? chatErrorKey(c) : "errExplain", explainLang),
+      });
+    }
+  };
+
+  /** The user answered "whose report is this?" (or tapped "Not Ammi?" and picked someone). */
+  const resolveIdentity = async (messageId: string, choice: IdentityChoice) => {
+    if (!begin()) return;
+    const lang = shifa.getState().lang;
+    try {
+      const msg = shifa.getState().messages.find((m) => m.id === messageId);
+      const pend = msg?.pendingIdentity;
+      if (!msg || !pend) return;
+      if (choice.kind === "cancel") {
+        shifa.updateMessage(messageId, {
+          pendingIdentity: undefined,
+          ...(pend.mode === "confirm" ? { text: t("idCancelled", lang) } : {}),
+        });
+        return;
+      }
+      const personId = choice.kind === "person" ? choice.personId : personFromPatient(pend.patient, t("familyMember", lang)).id;
+      if (personId !== msg.personId) {
+        shifa.moveMessages([messageId, ...(pend.userMessageId ? [pend.userMessageId] : [])], personId);
+      }
+      shifa.setActivePerson(personId);
+      shifa.updateMessage(messageId, { pendingIdentity: undefined });
+      if (pend.mode === "confirm" && pend.extracted) {
+        await completeScan(personId, messageId, pend.extracted, pend.source ?? "scan", Boolean(pend.offline), lang);
+      } else if (pend.mode === "move" && msg.reportId) {
+        shifa.moveReport(msg.reportId, personId);
+        const report = shifa.getState().reports.find((r) => r.id === msg.reportId);
+        if (report?.patient) learnPatient(personId, report.patient);
+        if (personId !== msg.personId) {
+          // Re-explain for the right person (the old answer named the wrong one).
+          shifa.updateMessage(messageId, { text: "" });
+          setBusyMessageId(messageId);
+          await explainInto(personId, msg.reportId, messageId, lang);
+        }
+      }
+    } catch (e) {
+      console.error("[shifa] identity choice failed", e);
+      shifa.updateMessage(messageId, { text: t("errOther", lang) });
+    } finally {
+      finish();
+    }
+  };
+
+  /** "Not Ammi?" on a report card: ask whose report it is, then move it. */
+  const startMove = (messageId: string) => {
+    const s = shifa.getState();
+    const idx = s.messages.findIndex((m) => m.id === messageId);
+    const msg = s.messages[idx];
+    if (!msg?.reportId || busyRef.current) return;
+    const report = s.reports.find((r) => r.id === msg.reportId);
+    const prev = s.messages
+      .slice(0, idx)
+      .reverse()
+      .find((m) => m.personId === msg.personId);
+    shifa.updateMessage(messageId, {
+      pendingIdentity: {
+        mode: "move",
+        forPersonId: msg.personId,
+        patient: report?.patient ?? { name: "", age: "", sex: "" },
+        conflicts: [],
+        ...(prev?.role === "user" && prev.attachmentName ? { userMessageId: prev.id } : {}),
+      },
+    });
   };
 
   const scanFile = (file: File) =>
@@ -374,5 +525,7 @@ export function useShifaChat() {
     sendText,
     scanFile,
     runSample,
+    resolveIdentity,
+    startMove,
   };
 }
