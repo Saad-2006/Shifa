@@ -23,11 +23,11 @@ export const TONE_DOT: Record<Tone, string> = {
   emergency: "bg-emergency",
 };
 
-export const URGENCY_META: Record<Urgency, { Icon: LucideIcon; tone: Tone; label: I18nKey; action: I18nKey }> = {
-  emergency: { Icon: Siren, tone: "emergency", label: "urgEmergency", action: "actEmergency" },
-  soon: { Icon: TriangleAlert, tone: "bad", label: "urgSoon", action: "actSoon" },
-  routine: { Icon: CircleAlert, tone: "warn", label: "urgRoutine", action: "actRoutine" },
-  normal: { Icon: CircleCheck, tone: "ok", label: "urgNormal", action: "actNormal" },
+export const URGENCY_META: Record<Urgency, { Icon: LucideIcon; tone: Tone; label: I18nKey; short: I18nKey; action: I18nKey }> = {
+  emergency: { Icon: Siren, tone: "emergency", label: "urgEmergency", short: "urgEmergency", action: "actEmergency" },
+  soon: { Icon: TriangleAlert, tone: "bad", label: "urgSoon", short: "urgSoonShort", action: "actSoon" },
+  routine: { Icon: CircleAlert, tone: "warn", label: "urgRoutine", short: "urgRoutine", action: "actRoutine" },
+  normal: { Icon: CircleCheck, tone: "ok", label: "urgNormal", short: "urgNormal", action: "actNormal" },
 };
 
 export function isFlagged(test: CheckedTest): boolean {
