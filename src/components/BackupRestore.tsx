@@ -11,8 +11,8 @@ const MAX_FILE_BYTES = 10 * 1024 * 1024;
 type Status = { tone: "ok" | "info" | "bad"; text: string } | null;
 
 /**
- * Backup = download everything on this phone as a .json file; Restore = merge such a file back in.
- * "full" is the drawer section; "link" is a single restore link for the welcome screen (new phone).
+ * Backup = download everything on this device as a .json file; Restore = merge such a file back in.
+ * "full" is the drawer section; "link" is a single restore link for the welcome screen (new device).
  */
 /** Small secondary action on the welcome screen (same look for "Load demo family" and "Restore"). */
 export const ACTION_TILE =

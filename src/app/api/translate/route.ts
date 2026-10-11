@@ -1,8 +1,9 @@
 import { EMERGENCY_SENTINEL } from "@/lib/emergency";
+import { scrubLabels } from "@/lib/outputScrub";
 import { GeminiError, generateText, isConfigured } from "@/lib/gemini";
 import { requireSignIn } from "@/lib/authGuard";
 import { guardRequest } from "@/lib/security";
-import { buildTranslateSystem, MAX_TRANSLATE_CHARS, numbersPreserved, speakableDevanagari, type TranslateTarget } from "@/lib/translate";
+import { buildTranslateSystem, MAX_TRANSLATE_CHARS, numbersPreserved, scriptFits, speakableDevanagari, type TranslateTarget } from "@/lib/translate";
 import type { ApiError, Lang } from "@/lib/types";
 
 export const runtime = "nodejs";
@@ -47,9 +48,11 @@ export async function POST(req: Request): Promise<Response> {
         text: `<answer>\n${text}\n</answer>`,
         signal: req.signal,
       });
-      const translated = out.text.replace(/<\/?answer>/g, "").split(EMERGENCY_SENTINEL).join("").trim();
-      // Read-aloud text must be all Devanagari (a Hindi voice skips Urdu-script words).
-      if (translated && numbersPreserved(text, translated) && (to !== "hi" || speakableDevanagari(translated))) {
+      const translated = scrubLabels(out.text.replace(/<\/?answer>/g, "").split(EMERGENCY_SENTINEL).join("")).trim();
+      // Code checks: same numbers; really in the target script (a "translation" to Urdu that came
+      // back in Roman letters is rejected); read-aloud text is all Devanagari.
+      const scriptOk = to === "hi" ? speakableDevanagari(translated) : scriptFits(translated, to);
+      if (translated && numbersPreserved(text, translated) && scriptOk) {
         return Response.json({ text: translated }, { headers: { "Cache-Control": "no-store", "x-shifa-model": out.model } });
       }
       console.warn(`[translate] check failed (${from} -> ${to}), attempt ${i + 1}`);

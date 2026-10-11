@@ -248,7 +248,7 @@ export default function Sidebar({
         <ThemeToggle lang={lang} />
       </section>
 
-      {/* Backup / Restore: reports live only on this phone */}
+      {/* Backup / Restore: reports live only on this device */}
       <section className="border-t pt-4">
         <SectionTitle lang={lang}>{t("yourData", lang)}</SectionTitle>
         <BackupRestore lang={lang} busy={busy} hasData={people.length > 0 || reports.length > 0} />

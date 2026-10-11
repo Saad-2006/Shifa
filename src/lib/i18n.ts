@@ -77,8 +77,8 @@ const dict = {
   resetAll: { en: "Reset all", ur: "سب کچھ مٹائیں", roman: "Sab reset karein" },
   resetConfirm: {
     en: "Delete all people, reports and chats on this device?",
-    ur: "اس فون سے تمام افراد، رپورٹس اور چیٹس مٹا دیں؟",
-    roman: "Is phone se tamam log, reports aur chats mita dein?",
+    ur: "اس ڈیوائس سے تمام افراد، رپورٹس اور چیٹس مٹا دیں؟",
+    roman: "Is device se tamam log, reports aur chats mita dein?",
   },
   yesReset: { en: "Yes, delete all", ur: "ہاں، سب مٹائیں", roman: "Haan, sab mitayein" },
   flaggedN: { en: "{n} flagged", ur: "{n} پر توجہ", roman: "{n} flagged" },
@@ -272,8 +272,8 @@ const dict = {
   signOut: { en: "Sign out", ur: "سائن آؤٹ", roman: "Sign out karein" },
   signInHint: {
     en: "Optional. Keeps your family's reports private to your Google account on this device.",
-    ur: "اختیاری۔ اس فون پر آپ کی فیملی کی رپورٹس صرف آپ کے گوگل اکاؤنٹ کے ساتھ رہیں گی۔",
-    roman: "Optional hai. Is phone par aap ki family ki reports sirf aap ke Google account ke saath rahengi.",
+    ur: "اختیاری۔ اس ڈیوائس پر آپ کی فیملی کی رپورٹس صرف آپ کے گوگل اکاؤنٹ کے ساتھ رہیں گی۔",
+    roman: "Optional hai. Is device par aap ki family ki reports sirf aap ke Google account ke saath rahengi.",
   },
   signInHttpsOnly: {
     en: "Google sign-in works on the live site (https) or on localhost.",
@@ -287,8 +287,8 @@ const dict = {
   },
   signInRequiredBody: {
     en: "Your reports stay on this device. Signing in keeps each family member's data separate and private.",
-    ur: "آپ کی رپورٹس اسی فون پر رہتی ہیں۔ سائن اِن سے ہر فرد کا ڈیٹا الگ اور محفوظ رہتا ہے۔",
-    roman: "Aap ki reports isi phone par rehti hain. Sign in se har family member ka data alag aur mehfooz rehta hai.",
+    ur: "آپ کی رپورٹس اسی ڈیوائس پر رہتی ہیں۔ سائن اِن سے ہر فرد کا ڈیٹا الگ اور محفوظ رہتا ہے۔",
+    roman: "Aap ki reports isi device par rehti hain. Sign in se har family member ka data alag aur mehfooz rehta hai.",
   },
   errSignIn: {
     en: "Please sign in with Google to continue. Open the menu and tap **Sign in with Google**.",
@@ -308,9 +308,9 @@ const dict = {
     roman: "Backup wapas layein (family, reports, chats)",
   },
   backupHint: {
-    en: "Reports are saved only on this phone. Back up now and then (and before changing phones). The file has health information, so keep it private.",
-    ur: "رپورٹس صرف اسی فون پر محفوظ ہیں۔ وقتاً فوقتاً (اور فون بدلنے سے پہلے) بیک اپ کریں۔ فائل میں صحت کی معلومات ہیں، اسے کسی سے شیئر نہ کریں۔",
-    roman: "Reports sirf isi phone par save hain. Waqtan fawaqtan (aur phone badalne se pehle) backup karein. File mein sehat ki maloomat hain, ise kisi se share na karein.",
+    en: "Reports are saved only on this device. Back up now and then (and before changing devices). The file has health information, so keep it private.",
+    ur: "رپورٹس صرف اسی ڈیوائس پر محفوظ ہیں۔ وقتاً فوقتاً (اور ڈیوائس بدلنے سے پہلے) بیک اپ کریں۔ فائل میں صحت کی معلومات ہیں، اسے کسی سے شیئر نہ کریں۔",
+    roman: "Reports sirf isi device par save hain. Waqtan fawaqtan (aur device badalne se pehle) backup karein. File mein sehat ki maloomat hain, ise kisi se share na karein.",
   },
   backupDone: {
     en: "Backup saved. Keep the file somewhere safe and private.",
@@ -323,9 +323,9 @@ const dict = {
     roman: "{p} log, {r} reports aur {m} messages wapas aa gaye.",
   },
   restoreNothing: {
-    en: "Nothing new to restore: everything in this backup is already on this phone.",
-    ur: "واپس لانے کو کچھ نیا نہیں: اس بیک اپ کی ہر چیز پہلے سے اس فون پر ہے۔",
-    roman: "Wapas lane ko kuch naya nahi: is backup ki har cheez pehle se is phone par hai.",
+    en: "Nothing new to restore: everything in this backup is already on this device.",
+    ur: "واپس لانے کو کچھ نیا نہیں: اس بیک اپ کی ہر چیز پہلے سے اس ڈیوائس پر ہے۔",
+    roman: "Wapas lane ko kuch naya nahi: is backup ki har cheez pehle se is device par hai.",
   },
   restoreBad: {
     en: "This file isn't a Shifa backup. Choose the .json file you saved from Shifa.",
@@ -500,9 +500,9 @@ const dict = {
   call1122: { en: "Call 1122", ur: "1122 پر کال کریں", roman: "1122 par call karein" },
   alertContacts: { en: "Family alert numbers", ur: "فیملی الرٹ نمبر", roman: "Family alert numbers" },
   alertContactsHint: {
-    en: "When Shifa spots an emergency (danger values in a report, or words like chest pain, fainting or \"emergency\"), it shows a button that opens WhatsApp with a ready message to these numbers. You tap Send. Saved only on this phone.",
-    ur: "جب شفا کو ایمرجنسی نظر آئے (رپورٹ میں خطرناک ویلیوز، یا سینے میں درد، بے ہوشی یا \"ایمرجنسی\" جیسے الفاظ)، تو ایک بٹن آتا ہے جو ان نمبروں کے لیے تیار پیغام کے ساتھ واٹس ایپ کھولتا ہے۔ بھیجنا آپ دبائیں۔ صرف اسی فون پر محفوظ۔",
-    roman: "Jab Shifa ko emergency nazar aaye (report mein khatarnak values, ya seenay mein dard, behoshi ya \"emergency\" jaise alfaaz), to aik button aata hai jo in numbers ke liye tayyar message ke saath WhatsApp kholta hai. Send aap dabayein. Sirf isi phone par save.",
+    en: "When Shifa spots an emergency (danger values in a report, or words like chest pain, fainting or \"emergency\"), it shows a button that opens WhatsApp with a ready message to these numbers. You tap Send. Saved only on this device.",
+    ur: "جب شفا کو ایمرجنسی نظر آئے (رپورٹ میں خطرناک ویلیوز، یا سینے میں درد، بے ہوشی یا \"ایمرجنسی\" جیسے الفاظ)، تو ایک بٹن آتا ہے جو ان نمبروں کے لیے تیار پیغام کے ساتھ واٹس ایپ کھولتا ہے۔ بھیجنا آپ دبائیں۔ صرف اسی ڈیوائس پر محفوظ۔",
+    roman: "Jab Shifa ko emergency nazar aaye (report mein khatarnak values, ya seenay mein dard, behoshi ya \"emergency\" jaise alfaaz), to aik button aata hai jo in numbers ke liye tayyar message ke saath WhatsApp kholta hai. Send aap dabayein. Sirf isi device par save.",
   },
   contactName: { en: "Name", ur: "نام", roman: "Naam" },
   contactNamePlaceholder: { en: "e.g. Bhai", ur: "مثلاً بھائی", roman: "Maslan Bhai" },
@@ -589,8 +589,8 @@ const dict = {
   },
   dashNoFamily: {
     en: "No family member on this device yet.",
-    ur: "اس فون پر ابھی کوئی فرد شامل نہیں۔",
-    roman: "Is phone par abhi koi family member nahi.",
+    ur: "اس ڈیوائس پر ابھی کوئی فرد شامل نہیں۔",
+    roman: "Is device par abhi koi family member nahi.",
   },
   reportsN: { en: "{n} reports", ur: "{n} رپورٹس", roman: "{n} reports" },
   reportOne: { en: "1 report", ur: "1 رپورٹ", roman: "1 report" },

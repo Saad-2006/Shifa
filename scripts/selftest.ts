@@ -5,7 +5,8 @@ import { ageNow, compareIdentity, findPersonByName, isRealName, latestReportAge,
 import { personSubtitle, quickRelations, relationLabel, relationSex, RELATIONS } from "@/lib/relations";
 import { barGeometry, patientLine, statusMeta } from "@/components/reportUtils";
 import { buildChatContents, buildChatSystem } from "@/lib/prompts";
-import { buildTranslateSystem, normaliseDigits, numbersIn, numbersPreserved, numbersWithin, reportNumbersText, speakableDevanagari } from "@/lib/translate";
+import { buildTranslateSystem, normaliseDigits, numbersIn, numbersPreserved, numbersWithin, reportNumbersText, scriptFits, speakableDevanagari } from "@/lib/translate";
+import { scrubLabels } from "@/lib/outputScrub";
 import assert from "node:assert/strict";
 import type { Person, ExtractedTest, ExtractedReport } from "@/lib/types";
 import { canonicalKey, checkTest, checkReport, parseNumber, parseRange, URGENCY_RANK } from "@/lib/labRules";
@@ -312,6 +313,12 @@ const minhajLike = { ...report([T("HbA1c", "7.2", "%", "<5.7")], "2026-10-09"), 
   ok("a dropped value is rejected", !numbersPreserved(en, ur.replace("MCV 76 fL۔ ", "")));
   ok("an added number is rejected", !numbersPreserved(en, `${ur} 1122 پر کال کریں۔`));
   ok("a number written as a word is rejected", !numbersPreserved(en, ur.replace("3 مزید", "تین مزید")));
+  // A Roman -> Urdu "translation" that came back still in Roman letters must be rejected.
+  const stillRoman = "سلام! Chughtai Lab ki report mein sirf 1 test check hua hai, aur woh bilkul normal hai. Aapka sugar ka trend check karne ke liye Glycosylated Hemoglobin (HbA1C) 4.7 % hai.";
+  ok("script check: Roman letters returned as 'Urdu' are rejected", !scriptFits(stillRoman, "ur"));
+  ok("script check: real Urdu passes", scriptFits(DEMO_ANSWER.ur, "ur"));
+  ok("script check: Urdu with many English test names still passes", scriptFits("ہیموگلوبن (Haemoglobin) Hb 10.6 g/dL، Glucose Fasting 156 mg/dL، HbA1c 7.4 % اور Vitamin D 14 ng/mL، یہ سب نارمل حد سے باہر ہیں اور ڈاکٹر کو اس ہفتے دکھانا چاہیے۔", "ur"));
+  ok("script check: Roman and English must not be in Urdu letters", scriptFits(DEMO_ANSWER.roman, "roman") && !scriptFits(DEMO_ANSWER.ur, "roman") && scriptFits(DEMO_ANSWER.en, "en"));
   ok("read-aloud text: pure Devanagari passes", speakableDevanagari("अम्मी की शुगर (HbA1c 7.4%) ज़्यादा है।"));
   ok("read-aloud text: Urdu-script words left in are rejected", !speakableDevanagari("अम्मी की शुगर और فاسٹنگ शुगर"));
   const hiSys = buildTranslateSystem("ur", "hi");
@@ -362,7 +369,16 @@ const minhajLike = { ...report([T("HbA1c", "7.2", "%", "<5.7")], "2026-10-09"), 
   ok("a count of values is allowed", numbersWithin("3 values are slightly outside the range.", src, 12));
   ok("'08' and '8' are the same day", numbersWithin("Report of 8 October 2026.", "2026-10-08", 0));
   ok("numbers inside test names are allowed ('Vitamin D (25-OH)')", numbersWithin("Vitamin D (25-OH) 14 ng/mL is low.", src, 0));
-  ok("summary prompt never asks the AI to say 'FOCUS'", /never \\?"FOCUS\\?"/.test(buildChatSystem({ lang: "en", person, reports: [sampleReport], task: "summary", focusReportId: sampleReport.id })));
+  // "FOCUS" leaked into answers twice: the label is gone from every prompt, and code scrubs leftovers.
+  for (const task of ["explain_report", "chat", "summary"] as const) {
+    const sys = buildChatSystem({ lang: "roman", person, reports: [sampleReport], task, focusReportId: sampleReport.id });
+    ok(`no 'FOCUS' anywhere in the ${task} prompt`, !/FOCUS/.test(sys));
+  }
+  const dataSys = buildChatSystem({ lang: "en", person, reports: [sampleReport], task: "explain_report", focusReportId: sampleReport.id });
+  ok("report dates given the way people say them", dataSys.includes("date 8 October 2026") && !dataSys.includes("date 2026-10-08"));
+  eq("scrub: 'FOCUS' removed from an answer", scrubLabels("Chughtai Lab ki is FOCUS report mein sirf 1 test hai."), "Chughtai Lab ki is report mein sirf 1 test hai.");
+  eq("scrub: other internal labels removed", scrubLabels("[Report 1] (main report) shows PATIENT DATA: Hb low"), "shows Hb low");
+  eq("scrub: the ordinary word 'focus' is kept", scrubLabels("Focus on a daily walk; focus matters."), "Focus on a daily walk; focus matters.");
 }
 
 // ---- 7c. Patient identity check (whose report is this?) -------------------

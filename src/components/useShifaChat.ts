@@ -6,6 +6,7 @@
 
 import { useRef, useState } from "react";
 import { apiFetch } from "@/lib/apiClient";
+import { scrubLabels } from "@/lib/outputScrub";
 import type { TranslateTarget } from "@/lib/translate";
 import { SAMPLE_EXTRACTION } from "@/lib/demoData";
 import { detectEmergency, EMERGENCY_SENTINEL } from "@/lib/emergency";
@@ -230,7 +231,7 @@ export async function streamChat(req: ChatRequest, messageId: string): Promise<v
   let lastFlush = 0;
   let timer: ReturnType<typeof setTimeout> | null = null;
 
-  const visible = () => raw.split(EMERGENCY_SENTINEL).join("").replace(/^\s+/, "");
+  const visible = () => scrubLabels(raw.split(EMERGENCY_SENTINEL).join("")).replace(/^\s+/, "");
   const flush = () => {
     timer = null;
     lastFlush = Date.now();
