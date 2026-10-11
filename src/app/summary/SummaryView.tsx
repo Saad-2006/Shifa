@@ -109,7 +109,7 @@ export default function SummaryView() {
         <button
           type="button"
           onClick={() => window.print()}
-          className="inline-flex min-h-11 items-center gap-2 rounded-input bg-accent px-5 font-semibold text-white hover:bg-accent-hover"
+          className="inline-flex min-h-11 items-center gap-2 rounded-input bg-ink px-5 font-semibold text-on-ink hover:bg-ink/90"
         >
           <Printer size={18} aria-hidden /> <span className={urduFont(ask)}>{t("printSummary", ask)}</span>
         </button>

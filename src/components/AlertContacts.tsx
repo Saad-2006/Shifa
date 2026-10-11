@@ -28,7 +28,7 @@ export default function AlertContacts({ contacts, lang }: { contacts: AlertConta
     setAdding(false);
   };
 
-  const input = "h-11 w-full rounded-input border bg-bg px-3 text-[15px] outline-none focus:border-accent";
+  const input = "h-11 w-full rounded-input border bg-bg px-3 text-[15px] outline-none focus:border-ink/50";
 
   return (
     <div className="space-y-2">
@@ -82,7 +82,7 @@ export default function AlertContacts({ contacts, lang }: { contacts: AlertConta
             </p>
           )}
           <div className="flex gap-2">
-            <button type="submit" className={`min-h-11 flex-1 rounded-input bg-accent px-3 text-sm font-medium text-white hover:bg-accent-hover ${ur}`}>
+            <button type="submit" className={`min-h-11 flex-1 rounded-input bg-ink px-3 text-sm font-medium text-on-ink hover:bg-ink/90 ${ur}`}>
               {t("contactAdd", lang)}
             </button>
             <button

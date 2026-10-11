@@ -94,7 +94,7 @@ Out of scope for Phase 1: medicines, SMS, user accounts, a server database, land
     - border `#E4E4E7`
     - text `#18181B`
     - muted `#71717A`
-  - Accent (buttons only): `#1A40FF`
+  - Buttons: black and white (`ink` / `on-ink`), the same in light and dark; colour is used only for health status and WhatsApp green
   - Status (health meaning only):
     - Normal: green `#15803D` on `#F0FDF4`
     - Attention: amber `#B45309` on `#FFFBEB`

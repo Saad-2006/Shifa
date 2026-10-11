@@ -10,8 +10,6 @@
   --color-muted: #71717a;
 
   /* Accent is for buttons only, never for results. */
-  --color-accent: #1a40ff;
-  --color-accent-hover: #1433d6;
 
   /* Status colours carry health meaning only, always with an icon and a word. */
   --color-ok: #15803d;
@@ -92,8 +90,6 @@
   --color-border: #2e2e33;
   --color-ink: #f4f4f5;
   --color-muted: #a1a1aa;
-  --color-accent: #4466ff;
-  --color-accent-hover: #5577ff;
   --color-ok: #4ade80;
   --color-ok-bg: #0f2a1b;
   --color-warn: #fbbf24;
@@ -114,8 +110,6 @@
     --color-border: #2e2e33;
     --color-ink: #f4f4f5;
     --color-muted: #a1a1aa;
-    --color-accent: #4466ff;
-    --color-accent-hover: #5577ff;
     --color-ok: #4ade80;
     --color-ok-bg: #0f2a1b;
     --color-warn: #fbbf24;
@@ -153,7 +147,7 @@
     border-color: var(--color-border);
   }
   :focus-visible {
-    outline: 2px solid var(--color-accent);
+    outline: 2px solid var(--color-ink);
     outline-offset: 2px;
     border-radius: 6px;
   }

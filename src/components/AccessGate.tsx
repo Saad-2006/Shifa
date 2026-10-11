@@ -114,7 +114,7 @@ export default function AccessGate({ children }: { children: ReactNode }) {
             onChange={(e) => setCode(e.target.value)}
             aria-invalid={error ? true : undefined}
             aria-describedby={error ? "shifa-access-error" : undefined}
-            className="h-12 w-full rounded-[12px] border border-border bg-bg px-4 text-[17px] text-ink outline-none placeholder:text-muted focus:border-accent focus:ring-2 focus:ring-accent/20"
+            className="h-12 w-full rounded-[12px] border border-border bg-bg px-4 text-[17px] text-ink outline-none placeholder:text-muted focus:border-ink/50 focus:ring-2 focus:ring-ink/10"
             placeholder="Access code"
           />
           {error && (
@@ -125,7 +125,7 @@ export default function AccessGate({ children }: { children: ReactNode }) {
           <button
             type="submit"
             disabled={busy || !code.trim()}
-            className="h-12 w-full rounded-[12px] bg-accent text-[17px] font-medium text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+            className="h-12 w-full rounded-[12px] bg-ink text-[17px] font-medium text-on-ink transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {busy ? "Checking…" : "Continue"}
           </button>

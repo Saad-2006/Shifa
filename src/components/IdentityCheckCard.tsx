@@ -112,7 +112,7 @@ export default function IdentityCheckCard({
             type="button"
             disabled={disabled}
             onClick={() => onResolve({ kind: "person", personId: suggested.id })}
-            className={`${btn} border-accent bg-accent text-white hover:bg-accent-hover`}
+            className={`${btn} border-ink bg-ink text-on-ink hover:bg-ink/90`}
           >
             <UserCheck size={18} aria-hidden className="shrink-0" />
             <span className={ur}>{t("idAddTo", lang, { name: suggested.name })}</span>

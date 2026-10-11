@@ -75,7 +75,7 @@ export default function SidebarResizer({ width, onChange, lang }: { width: numbe
     >
       <span
         aria-hidden
-        className={`absolute inset-y-0 left-1/2 w-0.5 -translate-x-1/2 transition-colors group-hover:bg-accent group-focus-visible:bg-accent ${active ? "bg-accent" : "bg-transparent"}`}
+        className={`absolute inset-y-0 left-1/2 w-0.5 -translate-x-1/2 transition-colors group-hover:bg-ink/40 group-focus-visible:bg-ink/60 ${active ? "bg-ink/60" : "bg-transparent"}`}
       />
     </div>
   );
