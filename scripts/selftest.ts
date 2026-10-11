@@ -381,6 +381,24 @@ const minhajLike = { ...report([T("HbA1c", "7.2", "%", "<5.7")], "2026-10-09"), 
   eq("scrub: the ordinary word 'focus' is kept", scrubLabels("Focus on a daily walk; focus matters."), "Focus on a daily walk; focus matters.");
 }
 
+// ---- 7b4. Urine microscopy words (Shaukat Khanum urine report: 9 flags were "unknown") ----------
+{
+  const st = (value: string, range: string) => checkTest(T("X", value, "", range)).status;
+  eq("Nil pus cells in 0-5/HPF is normal", st("Nil", "0-5/HPF"), "normal");
+  eq("Nil casts in 0/LPF is normal", st("Nil", "0/LPF"), "normal");
+  eq("Nil hyaline casts in 0-4/LPF is normal", st("Nil", "0-4/LPF"), "normal");
+  eq("lab-written 'Normal' urobilinogen is normal", st("Normal", "< 2. EU/dl"), "normal");
+  const bact = checkTest(T("Bacteria", "Occasional", "", "Negative"));
+  eq("occasional bacteria where normal is Negative: slightly abnormal", [bact.status, bact.severity], ["high", "mild"]);
+  eq("many pus cells where normal is Nil: clearly abnormal", checkTest(T("Pus cells", "Many", "", "Nil")).severity, "marked");
+  eq("+++ glucose where normal is Negative: clearly abnormal", checkTest(T("Glucose", "+++", "", "Negative")).severity, "marked");
+  eq("existing rule kept: Nil vs Negative is normal", st("Nil", "Negative"), "normal");
+  eq("existing rule kept: Reactive vs Non-reactive is abnormal", st("Reactive", "Non-reactive"), "high");
+  eq("numbers untouched: 6 in 4.5 - 8.0 is normal", st("6", "4.5 - 8.0"), "normal");
+  eq("a count above a zero range is still high", checkTest(T("Pus cells", "12", "/HPF", "0-5/HPF", { refLow: 0, refHigh: 5 })).status, "high");
+  eq("a single unchecked word stays unknown (no range)", st("Yellow", ""), "unknown");
+}
+
 // ---- 7c. Patient identity check (whose report is this?) -------------------
 {
   ok("names: same person, extra surname", namesMatch("SHAZIA BANO", "Shazia"));

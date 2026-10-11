@@ -46,7 +46,12 @@ Generic chatbots are not the answer. They can misread numbers, invent values, or
 - Make doctor visits more productive with a structured summary and good questions.
 
 **Expected outcomes**
-- **Reading accuracy:** measured with our evaluation tool (`npm run eval`), which scores Shifa's reading value by value against hand-checked labels and groups the results by lab. Early check: **14 of 14 values read exactly right**, with every normal range and High/Low flag matching, in about 6 seconds per report. This covers one real Minhaj Lab report (including its "See below" HbA1c category table) and our printed sample report. We are extending it to more real reports from Chughtai, Minhaj and Shaukat Khanum before the finals.
+- **Reading accuracy, measured on 9 real reports from the three labs we target:** Chughtai (5), Shaukat Khanum (3) and Minhaj (1). They include CBCs, a 25-row urine test, diabetes tests and a hormone test.
+  - **Method:** our evaluation tool (`npm run eval`) scores every value against labels taken from the printed report.
+  - **Reading:** **66 of 66 values read exactly right**, every printed normal range matched (42/42), and no invented rows. It ignored "previous results" columns and a pregnancy-week table. About 3.4 seconds per report.
+  - **Rules:** Shifa's rules then agreed with the meaning of **62 of 62** values.
+  - **What the test caught:** the first run found 9 urine results the rules did not understand yet (e.g. "Nil" pus cells where the normal is "0-5/HPF"). We fixed the rules and locked them in with tests; that is how the evaluation loop is meant to work.
+  - **Caveat:** it is a small set, and we are adding more reports before the finals.
 - **Safety:** 100% of danger values flagged by the rule engine. This is verified by automated tests.
 - Families understand their results without waiting for an appointment, and recognise emergencies sooner.
 

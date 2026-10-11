@@ -441,6 +441,16 @@ const POS_TEXT = /\b(?:positive|reactive|detected)\b/i;
 const isNegative = (s: string) => NEG_TEXT.test(s || "");
 const isPositive = (s: string) => !isNegative(s) && POS_TEXT.test(s || "");
 
+// Urine / stool microscopy words (Shaukat Khanum, Chughtai): "Nil" in a count range that starts at
+// 0 ("0-5/HPF", "0/LPF") is zero; "Normal" written by the lab is normal; small and large findings
+// against a "Negative"/"Nil" normal are slightly / clearly abnormal.
+const NIL_VALUE = /^\s*(?:nil|none|not\s+seen|absent|negative|0)\s*$/i;
+const ZERO_COUNT_RANGE = /^\s*0(?:\s*[-–]\s*[\d.]+)?\s*(?:\/\s*[a-z]+)?\s*$/i;
+const LAB_SAYS_NORMAL = /^\s*(?:normal|within\s+normal\s+limits|wnl)\s*$/i;
+const SMALL_FINDING = /^\s*(?:occasional|few|scanty|trace|present|seen|\+|1\+)\s*$/i;
+const LARGE_FINDING = /^\s*(?:many|plenty|numerous|loaded|\+{2,4}|[2-4]\+)\s*$/i;
+const NORMAL_IS_NONE = (range: string) => isNegative(range) || /^\s*(?:none|not\s+seen)\s*$/i.test(range || "");
+
 function flagDirection(t: ExtractedTest): { dir: "low" | "high"; strong: boolean } | null {
   const fromFlag = (t.printedFlag || "").trim().toLowerCase();
   const trailing = (t.value || "").trim().match(/\b(h|l|hh|ll|high|low)\s*$/i)?.[1]?.toLowerCase() ?? "";
@@ -530,6 +540,22 @@ export function checkTest(t: ExtractedTest): CheckedTest {
   } else if (isNegative(valueText) && isNegative(t.refRangeText)) {
     status = "normal";
     v = isNum(t.numericValue) ? t.numericValue : null;
+    range = null;
+  } else if (NIL_VALUE.test(valueText) && ZERO_COUNT_RANGE.test(t.refRangeText || "")) {
+    // "Nil" pus cells where the normal is "0-5/HPF": zero is inside the range.
+    status = "normal";
+    extra.qualitative = true;
+  } else if (LAB_SAYS_NORMAL.test(valueText)) {
+    // The lab itself wrote "Normal" as the result (e.g. urobilinogen).
+    status = "normal";
+    extra.qualitative = true;
+  } else if ((SMALL_FINDING.test(valueText) || LARGE_FINDING.test(valueText)) && NORMAL_IS_NONE(t.refRangeText)) {
+    // "Occasional" bacteria where the normal is "Negative": present, so outside the normal.
+    status = "high";
+    severity = LARGE_FINDING.test(valueText) ? "marked" : "mild";
+    extra.qualitative = true;
+    extra.excess = severity === "marked" ? 0.5 : 0.1;
+    v = null;
     range = null;
   } else if (v !== null && range && (range.low !== null || range.high !== null)) {
     const { low, high } = range;
