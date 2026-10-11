@@ -187,14 +187,14 @@ export const URGENCY_LABEL: Record<Urgency, string> = {
   normal: "Normal: nothing urgent",
 };
 
-const LANGUAGE_RULE: Record<Lang, string> = {
+export const LANGUAGE_RULE: Record<Lang, string> = {
   en: "Reply in simple, plain English that a 12-year-old can follow. Short sentences, everyday words.",
   ur: "Reply in Urdu script (اردو) using simple everyday words, as spoken at home in Pakistan. Medical terms and test names may be written in English in brackets, e.g. ہیموگلوبن (Haemoglobin). Write numbers, units and ranges with English digits, e.g. 10.6 g/dL.",
   roman:
     "Reply in Roman Urdu: Urdu written in English letters, the way Pakistanis type on WhatsApp (e.g. \"Ammi ki report mein haemoglobin thora kam hai\"). Keep test names in English. Do not use Urdu script and do not switch to English sentences.",
 };
 
-const LANGUAGE_NAME: Record<Lang, string> = { en: "simple English", ur: "Urdu script", roman: "Roman Urdu" };
+export const LANGUAGE_NAME: Record<Lang, string> = { en: "simple English", ur: "Urdu script", roman: "Roman Urdu" };
 
 /**
  * Hidden reminder appended to the latest user turn. Without it the model copies the language of

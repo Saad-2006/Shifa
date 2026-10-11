@@ -20,6 +20,7 @@ import type {
   ExtractRequest,
   ExtractResponse,
   LabReport,
+  Lang,
   PatientOnReport,
   Person,
 } from "@/lib/types";
@@ -135,6 +136,33 @@ function personFromPatient(patient: PatientOnReport, reportDate: string, fallbac
   });
   if (patient.name) shifa.rememberReportName(person.id, patient.name);
   return person;
+}
+
+/**
+ * Translate one of Shifa's answers on tap (display only). Saved in the message, so showing it
+ * again is free; the server rejects a translation that changes any number.
+ */
+export async function translateMessage(messageId: string, to: Lang): Promise<boolean> {
+  const m = shifa.getState().messages.find((x) => x.id === messageId);
+  if (!m || m.role !== "assistant" || !m.text.trim()) return false;
+  const from = m.lang ?? shifa.getState().lang;
+  if (from === to || m.translations?.[to]) return true;
+  try {
+    const res = await apiFetch("/api/translate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text: m.text, from, to }),
+    });
+    if (!res.ok) return false;
+    const body = (await res.json()) as { text?: unknown };
+    if (typeof body.text !== "string" || !body.text.trim()) return false;
+    const fresh = shifa.getState().messages.find((x) => x.id === messageId);
+    if (!fresh || fresh.text !== m.text) return false; // the answer changed meanwhile
+    shifa.updateMessage(messageId, { translations: { ...fresh.translations, [to]: body.text } });
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 export type IdentityChoice = { kind: "person"; personId: string } | { kind: "new" } | { kind: "cancel" };

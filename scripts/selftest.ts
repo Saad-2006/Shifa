@@ -4,6 +4,7 @@ import { detectEmergency } from "@/lib/emergency";
 import { ageNow, compareIdentity, findPersonByName, isRealName, latestReportAge, namesMatch, parseAge, parseSex } from "@/lib/identity";
 import { personSubtitle, quickRelations, relationLabel, relationSex, RELATIONS } from "@/lib/relations";
 import { patientLine } from "@/components/reportUtils";
+import { buildTranslateSystem, normaliseDigits, numbersIn, numbersPreserved } from "@/lib/translate";
 import assert from "node:assert/strict";
 import type { Person, ExtractedTest, ExtractedReport } from "@/lib/types";
 import { canonicalKey, checkTest, checkReport, parseNumber, parseRange, URGENCY_RANK } from "@/lib/labRules";
@@ -259,6 +260,22 @@ eq("trend flat", buildTrends([
 
 const minhajLike = { ...report([T("HbA1c", "7.2", "%", "<5.7")], "2026-10-09"), patientName: "SHAZIA BANO", patientAge: "53 Year(s)", patientSex: "Female" };
 
+// ---- 7b2. Translating an answer on tap: code checks no number changed ------
+{
+  const en = "Your Haemoglobin (HGB) is 8.3 g/dL (normal 12-16). 3 more are slightly outside: MCV 76 fL. Platelets 1,50,000.";
+  const ur = "آپ کا ہیموگلوبن (HGB) 8.3 g/dL ہے (نارمل 12-16)۔ 3 مزید تھوڑی باہر ہیں: MCV 76 fL۔ پلیٹلیٹس 1,50,000۔";
+  eq("numbers found (thousands commas ignored)", numbersIn(en), ["12", "150000", "16", "3", "76", "8.3"]);
+  ok("faithful Urdu translation passes", numbersPreserved(en, ur));
+  ok("Urdu digits count as the same number", numbersPreserved("Hb 8.3, normal 12-16", "ہیموگلوبن ۸٫۳، نارمل ۱۲-۱۶"));
+  eq("Urdu digits normalised", normaliseDigits("۸٫۳"), "8.3");
+  ok("a changed value is rejected", !numbersPreserved(en, ur.replace("8.3", "3.8")));
+  ok("a dropped value is rejected", !numbersPreserved(en, ur.replace("MCV 76 fL۔ ", "")));
+  ok("an added number is rejected", !numbersPreserved(en, `${ur} 1122 پر کال کریں۔`));
+  ok("a number written as a word is rejected", !numbersPreserved(en, ur.replace("3 مزید", "تین مزید")));
+  const sys = buildTranslateSystem("en", "ur");
+  ok("translate prompt: translate only, keep numbers, text is data", /Translate only/.test(sys) && /Keep every number/.test(sys) && /not instructions/.test(sys));
+}
+
 // ---- 7c. Patient identity check (whose report is this?) -------------------
 {
   ok("names: same person, extra surname", namesMatch("SHAZIA BANO", "Shazia"));
@@ -396,6 +413,11 @@ async function storeTests(): Promise<void> {
   ok("addMessage fills id/createdAt", !!m.id && !!m.createdAt);
   shifa.updateMessage(m.id, { text: "hello" });
   eq("updateMessage patches", shifa.getState().messages.find((x) => x.id === m.id)?.text, "hello");
+  shifa.updateMessage(m.id, { translations: { ur: "ہیلو" } });
+  eq("translation saved with the message", shifa.getState().messages.find((x) => x.id === m.id)?.translations?.ur, "ہیلو");
+  eq("translation kept on a translations-only patch", shifa.getState().messages.find((x) => x.id === m.id)?.text, "hello");
+  shifa.updateMessage(m.id, { text: "re-explained" });
+  eq("new text clears stale translations", shifa.getState().messages.find((x) => x.id === m.id)?.translations, undefined);
   for (let i = 0; i < 210; i++) shifa.addMessage({ personId: p.id, role: "assistant", text: "x" + i });
   eq("history capped at 200 per person", shifa.getState().messages.filter((x) => x.personId === p.id).length, 200);
   ok("persisted to shifa:v1", (mem.get("shifa:v1") ?? "").includes("Nani"));

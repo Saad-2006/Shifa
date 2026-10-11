@@ -1,14 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { HeartPulse, Menu, X } from "lucide-react";
+import { HeartPulse, Languages, Menu, X } from "lucide-react";
 import AccountCard from "@/components/AccountCard";
 import BackupRestore from "@/components/BackupRestore";
 import ChatThread from "@/components/ChatThread";
 import Composer, { type ComposerHandle } from "@/components/Composer";
 import Disclaimer from "@/components/Disclaimer";
 import FollowUpChips from "@/components/FollowUpChips";
-import LanguageToggle from "@/components/LanguageToggle";
 import PersonMenu from "@/components/PersonMenu";
 import PersonEditSheet from "@/components/PersonEditSheet";
 import ReportSheet from "@/components/ReportSheet";
@@ -16,9 +15,10 @@ import SignInGate from "@/components/SignInGate";
 import Sidebar from "@/components/Sidebar";
 import WelcomeState from "@/components/WelcomeState";
 import type { NewPerson } from "@/components/AddPersonForm";
+import type { Lang } from "@/lib/types";
 import { personReports } from "@/components/reportUtils";
 import { useShifaChat } from "@/components/useShifaChat";
-import { t } from "@/lib/i18n";
+import { LANG_SELF_NAME, t } from "@/lib/i18n";
 import { shifa, useHydrated, useShifa, type ShifaState } from "@/lib/store";
 import { useAuth } from "@/lib/useAuth";
 import { relationSex } from "@/lib/relations";
@@ -77,6 +77,17 @@ function ShifaApp({ state, auth }: { state: ShifaState; auth: ReturnType<typeof 
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [sheetId, setSheetId] = useState<string | null>(null);
   const [editPersonId, setEditPersonId] = useState<string | null>(null);
+  // "Preferred language: Urdu. New answers will be in Urdu…" after changing it in the sidebar.
+  const [langNotice, setLangNotice] = useState(false);
+  useEffect(() => {
+    if (!langNotice) return;
+    const id = setTimeout(() => setLangNotice(false), 10_000);
+    return () => clearTimeout(id);
+  }, [langNotice, lang]);
+  const changeLang = useCallback((l: Lang) => {
+    shifa.setLang(l);
+    setLangNotice(true);
+  }, []);
   const editPerson = editPersonId ? (people.find((p) => p.id === editPersonId) ?? null) : null;
   const openEditPerson = useCallback((id: string) => {
     setDrawerOpen(false);
@@ -131,6 +142,7 @@ function ShifaApp({ state, auth }: { state: ShifaState; auth: ReturnType<typeof 
     <>
       <AccountCard auth={auth} lang={lang} />
       <Sidebar
+      onChangeLang={changeLang}
       contacts={contacts}
       onEditPerson={openEditPerson}
       lang={lang}
@@ -225,8 +237,27 @@ function ShifaApp({ state, auth }: { state: ShifaState; auth: ReturnType<typeof 
               onAdd={addAndSelect}
             />
           </div>
-          <LanguageToggle lang={lang} onChange={(l) => shifa.setLang(l)} />
         </header>
+
+        {langNotice && (
+          <div role="status" className="animate-fade-in border-b bg-surface">
+            <div className="mx-auto flex max-w-[760px] items-start gap-3 px-4 py-2.5">
+              <Languages size={18} aria-hidden className="mt-0.5 shrink-0 text-muted" />
+              <div className={`min-w-0 flex-1 text-sm ${lang === "ur" ? "urdu" : ""}`}>
+                <p className="font-semibold">{t("langNoticeTitle", lang, { name: LANG_SELF_NAME[lang] })}</p>
+                <p className="text-muted">{t("langNoticeBody", lang, { name: LANG_SELF_NAME[lang] })}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setLangNotice(false)}
+                aria-label={t("close", lang)}
+                className="-me-2 inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full hover:bg-bg"
+              >
+                <X size={18} aria-hidden />
+              </button>
+            </div>
+          </div>
+        )}
 
         {showWelcome ? (
           <WelcomeState

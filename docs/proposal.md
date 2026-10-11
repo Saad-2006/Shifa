@@ -30,7 +30,7 @@ Generic chatbots are not the answer. They can misread numbers, invent values, or
    - It checks a list of danger values (e.g. potassium, sodium, haemoglobin, glucose, platelets).
    - It assigns an urgency: **Urgent: get checked today / See a doctor this week / Mention at next visit / Normal**.
 3. **Shows a verified report card** with the urgency and the values that need attention, each on a simple range bar.
-4. **Explains it in the family's language,** English, Urdu or Roman Urdu. The explanation is grounded only in that person's reports, and it can't override the code's flags.
+4. **Explains it in the family's language,** English, Urdu or Roman Urdu. The family sets a preferred language once, and any answer can be shown in another language with one tap (e.g. a caretaker reads in English, then shows Ammi the Urdu). Code checks every translation: if any number changed, it isn't shown. The explanation is grounded only in that person's reports, and it can't override the code's flags.
 5. **Answers follow-up questions** in the same chat ("Kya ye serious hai?", "Doctor se kya poochein?") and compares results over time.
 6. **Handles emergencies calmly.** Code detects emergency words in English, Urdu and Roman Urdu, and danger values on reports. It shows a calm card in the chat whose main button sends a ready WhatsApp message to the family. Typed emergencies (chest pain, fainting) also get one "Call 1122" button. The AI alone can never raise an emergency.
 7. **Prepares a one-page Doctor Summary** to print or share, so the consultation starts with the facts.
@@ -67,6 +67,7 @@ Generic chatbots are not the answer. They can misread numbers, invent values, or
 | Emergency detection | Writes the calm advice in the reply | Keyword and fuzzy matching in three languages, and danger values, decide when the urgent card (WhatsApp to family, plus 1122 for typed emergencies) appears |
 | Patient identity check | Reads the patient's name, age and sex from the report | Compares them with the chosen family member. On a mismatch, nothing is added until the user confirms whose report it is |
 | WhatsApp alert | – | For code-decided emergencies only (a danger value, or emergency words): one tap opens WhatsApp with a code-written alert to a saved family number |
+| Translate an answer (one tap) | Translates one of Shifa's answers into English / Urdu / Roman Urdu | Checks that every number survived unchanged (none lost or added); otherwise the translation is not shown. Saved, so showing it again costs nothing |
 | Dark mode | – | System / Light / Dark themes, readable in all three languages |
 | Trends across reports | – | Charts each test over time against its normal band |
 | Family profiles | – | Separate history per family member, stored only on the device |

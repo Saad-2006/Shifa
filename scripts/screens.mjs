@@ -113,7 +113,21 @@ const browser = await chromium.launch({ executablePath: CHROME, headless: true }
   const closeBtn = page.getByRole("button", { name: /close/i }).first();
   if (await closeBtn.isVisible().catch(() => false)) await closeBtn.click();
 
-  await page.getByRole("radio", { name: "اردو (Urdu)" }).first().click();
+  // Preferred language is set in the menu now (the header toggle is gone), with a short notice.
+  const setLang = async (name) => {
+    await page.getByRole("button", { name: /menu|مینو|Menu/i }).first().click();
+    await page.waitForTimeout(300);
+    await page.getByRole("radio", { name }).first().click();
+    await page.keyboard.press("Escape");
+    await page.waitForTimeout(300);
+    const close = page.getByRole("button", { name: /close menu|مینو بند|Menu band/i }).first();
+    if (await close.isVisible().catch(() => false)) await close.click();
+  };
+  await setLang("اردو (Urdu)");
+  const notice = await page.getByRole("status").filter({ hasText: /اردو/ }).count();
+  console.log("language notice shown after changing it in the menu:", notice > 0);
+  if (!notice) problems.push("[language] no notice after changing the preferred language");
+  await page.screenshot({ path: `${OUT}/mobile-language-notice.png` });
   await waitForChat(page, async () => {
     await page.locator("textarea").fill("کیا امی کی رپورٹ میں کوئی خطرے کی بات ہے؟");
     await page.keyboard.press("Enter");
@@ -128,13 +142,30 @@ const browser = await chromium.launch({ executablePath: CHROME, headless: true }
     });
   const urdu = await lastAnswer();
   console.log("urdu answer uses Urdu script:", /[\u0600-\u06FF]/.test(urdu) && !/\b(hai|mein|ki)\b/.test(urdu));
-  await page.getByRole("radio", { name: "English" }).first().click();
+  await setLang("English");
   await waitForChat(page, async () => {
     await page.locator("textarea").fill("Ammi ki sugar kitni zyada hai?");
     await page.keyboard.press("Enter");
   });
   const en = await lastAnswer();
   console.log("english answer is English:", !/[\u0600-\u06FF]/.test(en) && !/\b(hai|hain|mein|ki|aur)\b/i.test(en), "|", en.slice(0, 90).replace(/\n/g, " "));
+
+  // "Show in: اردو" under that English answer: translated on tap (checked by code), then back.
+  await page.getByRole("button", { name: "اردو" }).last().click();
+  await page.getByText(/Translated from English/i).last().waitFor({ timeout: 120_000 }).catch(() => {});
+  const shownUrdu = await page.getByText(/Translated from English/i).count();
+  const saved = await page.evaluate(() => {
+    const s = JSON.parse(localStorage.getItem("shifa:v1") ?? "{}");
+    const mine = (s.messages ?? []).filter((m) => m.personId === s.activePersonId && m.role === "assistant");
+    return mine.at(-1)?.translations?.ur ?? "";
+  });
+  const translatedOk = shownUrdu > 0 && /[\u0600-\u06FF]/.test(saved);
+  console.log("answer translated to Urdu on tap and saved:", translatedOk);
+  if (!translatedOk) problems.push("[language] tapping اردو under an answer did not show a saved Urdu translation");
+  await page.screenshot({ path: `${OUT}/mobile-translated-answer.png` });
+  await page.getByRole("button", { name: "English" }).last().click();
+  await page.waitForTimeout(300);
+  if (await page.getByText(/Translated from English/i).count()) problems.push("[language] could not switch back to the original answer");
   await ctx.close();
 }
 

@@ -4,7 +4,7 @@
 - **reads it** (AI)
 - **checks every value** against the report's own normal ranges and a list of danger values (plain code, no AI)
 - **says how urgent it is**
-- **explains it in English, Urdu or Roman Urdu**, then answers your follow-up questions
+- **explains it in English, Urdu or Roman Urdu**, then answers your follow-up questions (set your preferred language once; any answer can be shown in another language with one tap, and code checks that no number changed in the translation)
 
 > Built for the AIEF 4th International AI Championship, category **AI in Healthcare**.
 > Live demo: https://shifa-silk.vercel.app · Video (2 min): TODO

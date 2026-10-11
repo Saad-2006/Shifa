@@ -386,7 +386,45 @@ export function parseJsonLoose(text: string): unknown {
   throw new GeminiError("bad_json", "Gemini returned text that is not valid JSON", 502);
 }
 
-// ---------------------------------------------------------------- generateJSON
+// ---------------------------------------------------------------- generateJSON / generateText
+
+/** One non-streaming generateContent call across the model chain; `parse` turns the text into T. */
+async function generateOnce<T>(o: {
+  body: Record<string, unknown>;
+  timeoutMs: number;
+  attemptTimeoutMs: number;
+  signal?: AbortSignal;
+  parse: (text: string) => T;
+}): Promise<{ data: T; model: string }> {
+  const { value, model } = await runChain<T>({
+    totalMs: o.timeoutMs,
+    attemptMs: o.attemptTimeoutMs,
+    signal: o.signal,
+    attempt: async (key, model, ctl) => {
+      try {
+        const res = await postModel(key, model, "generateContent", o.body, ctl.signal);
+        let json: GenResponse;
+        try {
+          json = (await res.json()) as GenResponse;
+        } catch (e) {
+          if (ctl.signal.aborted || isAbort(e)) throw timeoutError(model);
+          throw new GeminiError("upstream", "Gemini sent an unreadable response", 502);
+        }
+        const blocked = blockedReason(json);
+        if (blocked) throw new GeminiError("blocked", `Gemini blocked the request (${blocked})`, 422);
+        const text = textOf(json);
+        if (!text.trim()) {
+          const fr = json.candidates?.[0]?.finishReason ?? "none";
+          throw new GeminiError("bad_json", `Gemini returned no text (finishReason ${fr})`, 502);
+        }
+        return o.parse(text);
+      } finally {
+        ctl.done();
+      }
+    },
+  });
+  return { data: value, model };
+}
 
 export async function generateJSON<T>(o: {
   system: string;
@@ -405,34 +443,26 @@ export async function generateJSON<T>(o: {
     contents: [{ role: "user", parts }],
     generationConfig: { temperature, responseMimeType: "application/json", responseSchema: schema },
   };
-  const { value, model } = await runChain<T>({
-    totalMs: timeoutMs,
-    attemptMs: attemptTimeoutMs,
-    signal,
-    attempt: async (key, model, ctl) => {
-      try {
-        const res = await postModel(key, model, "generateContent", body, ctl.signal);
-        let json: GenResponse;
-        try {
-          json = (await res.json()) as GenResponse;
-        } catch (e) {
-          if (ctl.signal.aborted || isAbort(e)) throw timeoutError(model);
-          throw new GeminiError("upstream", "Gemini sent an unreadable response", 502);
-        }
-        const blocked = blockedReason(json);
-        if (blocked) throw new GeminiError("blocked", `Gemini blocked the request (${blocked})`, 422);
-        const text = textOf(json);
-        if (!text.trim()) {
-          const fr = json.candidates?.[0]?.finishReason ?? "none";
-          throw new GeminiError("bad_json", `Gemini returned no text (finishReason ${fr})`, 502);
-        }
-        return parseJsonLoose(text) as T;
-      } finally {
-        ctl.done();
-      }
-    },
-  });
-  return { data: value, model };
+  return generateOnce<T>({ body, timeoutMs, attemptTimeoutMs, signal, parse: (text) => parseJsonLoose(text) as T });
+}
+
+/** Plain-text answer in one piece (no streaming), e.g. translating an answer. */
+export async function generateText(o: {
+  system: string;
+  text: string;
+  temperature?: number;
+  timeoutMs?: number;
+  attemptTimeoutMs?: number;
+  signal?: AbortSignal;
+}): Promise<{ text: string; model: string }> {
+  const { system, text, temperature = 0.1, timeoutMs = 40000, attemptTimeoutMs = 20000, signal } = o;
+  const body = {
+    systemInstruction: { parts: [{ text: system }] },
+    contents: [{ role: "user", parts: [{ text }] }],
+    generationConfig: { temperature },
+  };
+  const { data, model } = await generateOnce<string>({ body, timeoutMs, attemptTimeoutMs, signal, parse: (t) => t.trim() });
+  return { text: data, model };
 }
 
 // ---------------------------------------------------------------- SSE + streamText
