@@ -71,7 +71,7 @@ Generic chatbots are not the answer. They can misread numbers, invent values, or
 | Read aloud and voice input | – | Every answer can be read aloud; on phones without an Urdu voice, Urdu answers are read by the Hindi voice (same spoken words), with numbers checked by code |
 | Ask with a report | Answers the question typed next to an attached or pasted report, inside the explanation | Keeps the report waiting until Send, so the question goes with it |
 | Dark mode | – | System / Light / Dark themes, readable in all three languages |
-| Trends across reports | – | Charts each test over time against its normal band |
+| Trends & reports dashboard | – | Charts each test over time against its normal band, most urgent first (danger level, then well outside, then slightly outside), with every report one tap away. The laptop sidebar shows only the most urgent chart (or the latest change if all are normal) |
 | Family profiles | – | Separate history per family member, stored only on the device |
 | Doctor Summary | Writes one "In simple words" paragraph for the family | Printable one-page summary for the doctor; questions to ask in the family's language with English underneath; every number in the AI paragraph must come from the report, or it isn't shown |
 | Accuracy evaluation | – | `npm run eval` scores the reading accuracy on hand-labelled real reports |

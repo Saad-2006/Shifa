@@ -125,6 +125,18 @@ function ShifaApp({ state, auth }: { state: ShifaState; auth: ReturnType<typeof 
     setSheetId(id);
   }, []);
 
+  // "/?report=<id>" (a report tapped on the dashboard): show that person's chat with the report open.
+  useEffect(() => {
+    const id = new URLSearchParams(window.location.search).get("report");
+    if (!id) return;
+    const r = shifa.getState().reports.find((x) => x.id === id);
+    if (r) {
+      shifa.setActivePerson(r.personId);
+      setSheetId(id);
+    }
+    window.history.replaceState(null, "", window.location.pathname);
+  }, []);
+
   const ask = (text: string) => {
     setSheetId(null);
     void chat.sendText(text);
@@ -140,10 +152,12 @@ function ShifaApp({ state, auth }: { state: ShifaState; auth: ReturnType<typeof 
   const showFollowUps =
     !chat.busy && !showWelcome && myReports.length > 0 && last?.role === "assistant" && last.text.trim().length > 0;
 
-  const sidebar = (
+  // The same sidebar on laptops and in the phone menu; only the laptop one shows a trend chart.
+  const sidebar = (inMenu: boolean) => (
     <>
       <AccountCard auth={auth} lang={lang} />
       <Sidebar
+      showTrendChart={!inMenu}
       onChangeLang={changeLang}
       contacts={contacts}
       onEditPerson={openEditPerson}
@@ -181,7 +195,7 @@ function ShifaApp({ state, auth }: { state: ShifaState; auth: ReturnType<typeof 
       {/* Sidebar: fixed on large screens */}
       <div className="relative hidden shrink-0 lg:flex" style={{ width: sidebarWidth }}>
         <aside className="w-full overflow-y-auto border-r bg-surface" aria-label={t("family", lang)}>
-          {sidebar}
+          {sidebar(false)}
         </aside>
         <SidebarResizer width={sidebarWidth} onChange={setSidebarWidth} lang={lang} />
       </div>
@@ -210,7 +224,7 @@ function ShifaApp({ state, auth }: { state: ShifaState; auth: ReturnType<typeof 
                 <X size={22} aria-hidden />
               </button>
             </div>
-            <div className="min-h-0 flex-1 overflow-y-auto pb-[env(safe-area-inset-bottom)]">{sidebar}</div>
+            <div className="min-h-0 flex-1 overflow-y-auto pb-[env(safe-area-inset-bottom)]">{sidebar(true)}</div>
           </aside>
         </div>
       )}

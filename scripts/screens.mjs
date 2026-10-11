@@ -358,6 +358,61 @@ const browser = await chromium.launch({ executablePath: CHROME, headless: true }
   await ctx.close();
 }
 
+// ---------- Trends & reports dashboard: one urgent chart on a laptop, a tab on phones ----------
+{
+  const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 }, deviceScaleFactor: 2 });
+  const page = await ctx.newPage();
+  watch(page, "dashboard");
+  await page.goto(BASE, { waitUntil: "networkidle" });
+  await page.getByRole("radio", { name: "English" }).first().click();
+  await page.getByRole("button", { name: /Load demo family/i }).first().click();
+  await page.waitForTimeout(1500);
+  const sideCharts = await page.locator("aside figure").count();
+  const urgentLabel = await page.locator("aside").getByText("Most urgent right now").count();
+  console.log(`laptop sidebar: ${sideCharts} chart (most urgent label: ${urgentLabel > 0})`);
+  if (sideCharts !== 1 || !urgentLabel) problems.push(`[dashboard] laptop sidebar should show 1 urgent chart, shows ${sideCharts}`);
+  await page.locator("aside").getByRole("link", { name: /Trends & reports/ }).click();
+  await page.waitForURL(/\/dashboard/);
+  await page.getByText("Trends over time").waitFor();
+  const dashCharts = await page.locator("figure").count();
+  const reportLinks = await page.getByRole("link", { name: /Open in chat/ }).count();
+  console.log(`dashboard: ${dashCharts} charts, ${reportLinks} reports`);
+  if (dashCharts < 2 || reportLinks !== 2) problems.push(`[dashboard] expected all charts and 2 reports, got ${dashCharts} / ${reportLinks}`);
+  await page.waitForTimeout(2000); // let the chart lines finish drawing
+  await page.screenshot({ path: `${OUT}/dashboard.png`, fullPage: true });
+  await page.getByRole("button", { name: /Abbu/ }).click();
+  await page.waitForURL(/person=demo-abbu/);
+  await page.getByRole("button", { name: /Ammi/ }).click();
+  await page.getByRole("link", { name: /Open in chat/ }).last().click();
+  await page.waitForURL((u) => u.pathname === "/");
+  const sheet = await page.getByRole("dialog").first().isVisible().catch(() => false);
+  console.log("report from the dashboard opens in the chat:", sheet);
+  if (!sheet) problems.push("[dashboard] tapping a report did not open it in the chat");
+  await ctx.close();
+
+  const phone = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 3, isMobile: true, hasTouch: true });
+  const mp = await phone.newPage();
+  watch(mp, "dashboard-phone");
+  await mp.goto(BASE, { waitUntil: "networkidle" });
+  await mp.getByRole("radio", { name: "English" }).first().click();
+  await mp.getByRole("button", { name: /Load demo family/i }).first().click();
+  await mp.waitForTimeout(500);
+  await mp.getByRole("button", { name: /menu/i }).first().click();
+  await mp.waitForTimeout(500);
+  const drawerCharts = await mp.locator("[role=dialog] figure").count();
+  const tab = mp.getByRole("link", { name: /Trends & reports/ });
+  console.log(`phone menu: ${drawerCharts} charts, tab shown: ${await tab.isVisible()}`);
+  if (drawerCharts !== 0 || !(await tab.isVisible())) problems.push("[dashboard] phone menu should show the tab, not charts");
+  await tab.click();
+  await mp.waitForURL(/\/dashboard/);
+  await mp.getByText("Trends over time").waitFor();
+  const overflow = await mp.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1);
+  if (overflow) problems.push("[dashboard] page scrolls sideways on a phone");
+  await mp.waitForTimeout(2000);
+  await mp.screenshot({ path: `${OUT}/dashboard-phone.png`, fullPage: true });
+  await phone.close();
+}
+
 // ---------- iPhone-like voices (English + Hindi, no Urdu): Urdu Listen uses the Hindi voice ----------
 {
   const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 3, isMobile: true, hasTouch: true });
