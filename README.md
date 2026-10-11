@@ -29,7 +29,10 @@
 
 The AI is told the flags were computed by code and must never override them.
 
-**Reading accuracy:** `npm run eval` scores the reading value by value against hand-checked labels, per lab (see `eval/README.md`). Early check: 14 of 14 values read exactly right, with every range and High/Low flag matching (one real Minhaj Lab report with a "See below" HbA1c table, plus the printed sample report). It is being extended to more real Chughtai, Minhaj and Shaukat Khanum reports.
+**Reading accuracy:** `npm run eval` scores every value against labels taken from the printed report, per lab (see `eval/README.md`).
+- **Result on 9 real reports** (Chughtai 5, Shaukat Khanum 3, Minhaj 1): 66 of 66 values read exactly right, 42/42 printed ranges, no invented rows, and 62 of 62 values flagged as the report means.
+- **What the test caught:** the first run found 9 urine results the rules didn't understand; those rules are fixed and tested.
+- **Caveat:** a small set that is still growing.
 
 ## Features
 - **Scan in chat:** camera or attach (photo or PDF).
