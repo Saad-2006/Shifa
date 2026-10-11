@@ -99,11 +99,17 @@ const dict = {
 
   // Chat thread
   you: { en: "You", ur: "آپ", roman: "Aap" },
-  offline: { en: "offline", ur: "آف لائن", roman: "offline" },
+  offline: { en: "Basic answer", ur: "سادہ جواب", roman: "Basic jawab" },
   offlineHint: {
-    en: "Answered by Shifa's offline rules, not live AI",
-    ur: "یہ جواب شفا کے آف لائن اصولوں سے ہے، لائیو AI سے نہیں",
-    roman: "Ye jawab Shifa ke offline rules se hai, live AI se nahi",
+    en: "The live AI wasn't available, so Shifa wrote this from its built-in rules. The values are still checked by code. Ask again in a little while for a fuller answer.",
+    ur: "لائیو AI دستیاب نہیں تھا، اس لیے شفا نے یہ جواب اپنے بنیادی اصولوں سے لکھا۔ ویلیوز پھر بھی کوڈ نے چیک کی ہیں۔ مکمل جواب کے لیے تھوڑی دیر بعد دوبارہ پوچھیں۔",
+    roman: "Live AI dastyab nahi tha, is liye Shifa ne ye jawab apne built-in rules se likha. Values phir bhi code ne check ki hain. Mukammal jawab ke liye thori der baad dobara poochein.",
+  },
+  preparingVoice: { en: "Preparing voice…", ur: "آواز تیار ہو رہی ہے…", roman: "Awaaz tayyar ho rahi hai…" },
+  voiceFailed: {
+    en: "Couldn't prepare the voice right now. Please try again.",
+    ur: "ابھی آواز تیار نہیں ہو سکی۔ دوبارہ کوشش کریں۔",
+    roman: "Abhi awaaz tayyar nahi ho saki. Dobara koshish karein.",
   },
   listen: { en: "Listen", ur: "سنیں", roman: "Sunein" },
   stop: { en: "Stop", ur: "روکیں", roman: "Rokein" },

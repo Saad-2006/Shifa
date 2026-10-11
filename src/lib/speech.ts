@@ -1,5 +1,7 @@
 // Best-effort voice input and read-aloud using the browser's built-in speech APIs.
 // Everything here is client-only and fails soft: callers hide buttons when unsupported.
+// Many phones and computers (iPhone, Mac, desktop Chrome) have no Urdu voice but do have a
+// Hindi one, and spoken Urdu and Hindi sound almost the same: see readAloudPlan().
 
 import type { Lang } from "@/lib/types";
 
@@ -106,21 +108,50 @@ function norm(l: string): string {
   return l.toLowerCase().replace("_", "-");
 }
 
-function pickVoice(lang: Lang): SpeechSynthesisVoice | null {
+/** A display language, or "hi": Urdu written in Devanagari, read by a Hindi voice. */
+export type VoiceLang = Lang | "hi";
+
+function pickVoice(lang: VoiceLang): SpeechSynthesisVoice | null {
   const s = synth();
   if (!s) return null;
   const voices = s.getVoices();
   const find = (pred: (l: string) => boolean) => voices.find((v) => pred(norm(v.lang))) ?? null;
   if (lang === "ur") return find((l) => l.startsWith("ur"));
+  if (lang === "hi") return find((l) => l.startsWith("hi"));
   if (lang === "roman") return find((l) => l === "en-in") ?? find((l) => l.startsWith("en"));
   return find((l) => l === "en-us") ?? find((l) => l === "en-gb") ?? find((l) => l.startsWith("en"));
 }
 
-/** Urdu needs an installed ur-* voice; English and Roman fall back to the default voice. */
+/**
+ * How to read an answer aloud on this device:
+ * - "direct": a voice for its own language (English and Roman can always use the default voice)
+ * - "hi": Urdu with no Urdu voice, so read the same words in Devanagari with a Hindi voice
+ * - "roman": Urdu with neither voice, so read the Roman Urdu version
+ * - null: no speech at all in this browser
+ */
+export function readAloudPlan(lang: Lang): "direct" | "hi" | "roman" | null {
+  if (!synth()) return null;
+  if (lang !== "ur" || pickVoice("ur")) return "direct";
+  return pickVoice("hi") ? "hi" : "roman";
+}
+
+/** The Listen button is shown whenever the browser can speak at all (Urdu has fallbacks). */
 export function canSpeak(lang: Lang): boolean {
-  if (!synth()) return false;
-  if (lang === "ur") return pickVoice("ur") !== null;
-  return true;
+  return readAloudPlan(lang) !== null;
+}
+
+/**
+ * Call synchronously inside the tap, before any await: iPhones only allow speech that starts
+ * from a tap, so this unlocks it for an answer that first has to be fetched.
+ */
+export function primeSpeech(): void {
+  const s = synth();
+  if (!s) return;
+  try {
+    s.speak(new SpeechSynthesisUtterance(" "));
+  } catch {
+    /* ignore */
+  }
 }
 
 /** Re-check `canSpeak` when the browser finishes loading voices. Returns an unsubscribe. */
@@ -143,9 +174,10 @@ export function stripMarkdown(text: string): string {
     .trim();
 }
 
-/** Split into chunks under ~200 chars: Chrome cuts off long utterances. */
-function chunk(text: string): string[] {
-  const parts = (text.match(/[^.!?۔؟\n]+[.!?۔؟\n]*/g) ?? []).map((p) => p.trim()).filter(Boolean);
+/** Split into chunks under ~200 chars: Chrome cuts off long utterances. A "." inside a number
+ * ("7.4") is not a sentence end, so numbers are never read as "7. 4". */
+export function chunk(text: string): string[] {
+  const parts = (text.match(/(?:[^.!?۔؟।\n]|\.(?=\d))+[.!?۔؟।\n]*/g) ?? []).map((p) => p.trim()).filter(Boolean);
   const out: string[] = [];
   let cur = "";
   for (const p of parts) {
@@ -161,14 +193,15 @@ function chunk(text: string): string[] {
 }
 
 /** Read text aloud. Returns false if speech is unavailable. `onEnd` fires when done or stopped. */
-export function speak(text: string, lang: Lang, onEnd?: () => void): boolean {
+export function speak(text: string, lang: VoiceLang, onEnd?: () => void): boolean {
   const s = synth();
-  if (!s || !canSpeak(lang)) return false;
-  s.cancel();
+  if (!s) return false;
   const voice = pickVoice(lang);
+  if ((lang === "ur" || lang === "hi") && !voice) return false; // see readAloudPlan()
+  s.cancel();
   const chunks = chunk(stripMarkdown(text));
   if (chunks.length === 0) return false;
-  const fallbackLang = lang === "ur" ? "ur-PK" : lang === "roman" ? "en-IN" : "en-US";
+  const fallbackLang = lang === "ur" ? "ur-PK" : lang === "hi" ? "hi-IN" : lang === "roman" ? "en-IN" : "en-US";
   let done = false;
   const finish = () => {
     if (done) return;

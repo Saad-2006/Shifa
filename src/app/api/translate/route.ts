@@ -2,7 +2,7 @@ import { EMERGENCY_SENTINEL } from "@/lib/emergency";
 import { GeminiError, generateText, isConfigured } from "@/lib/gemini";
 import { requireSignIn } from "@/lib/authGuard";
 import { guardRequest } from "@/lib/security";
-import { buildTranslateSystem, MAX_TRANSLATE_CHARS, numbersPreserved } from "@/lib/translate";
+import { buildTranslateSystem, MAX_TRANSLATE_CHARS, numbersPreserved, type TranslateTarget } from "@/lib/translate";
 import type { ApiError, Lang } from "@/lib/types";
 
 export const runtime = "nodejs";
@@ -10,6 +10,7 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
 const LANGS: Lang[] = ["en", "ur", "roman"];
+const TARGETS: TranslateTarget[] = [...LANGS, "hi"]; // "hi": Devanagari, only for reading Urdu aloud
 const ATTEMPTS = 2; // a second try when a number didn't survive, then give up honestly
 
 function apiError(status: number, code: ApiError["code"], error: string): Response {
@@ -17,7 +18,7 @@ function apiError(status: number, code: ApiError["code"], error: string): Respon
   return Response.json(body, { status, headers: { "Cache-Control": "no-store" } });
 }
 
-/** POST { text, from, to } -> { text }: translate one of Shifa's answers, checked by code. */
+/** POST { text, from, to } -> { text }: translate one of Shifa's answers (or write it in Devanagari for read-aloud), checked by code. */
 export async function POST(req: Request): Promise<Response> {
   const blocked = guardRequest(req, { route: "translate" });
   if (blocked) return blocked;
@@ -33,8 +34,8 @@ export async function POST(req: Request): Promise<Response> {
   const b = (raw ?? {}) as { text?: unknown; from?: unknown; to?: unknown };
   const text = typeof b.text === "string" ? b.text.split(EMERGENCY_SENTINEL).join("").trim() : "";
   const from = b.from as Lang;
-  const to = b.to as Lang;
-  if (!text || text.length > MAX_TRANSLATE_CHARS || !LANGS.includes(from) || !LANGS.includes(to) || from === to) {
+  const to = b.to as TranslateTarget;
+  if (!text || text.length > MAX_TRANSLATE_CHARS || !LANGS.includes(from) || !TARGETS.includes(to) || from === to) {
     return apiError(400, "bad_request", "Send { text, from, to } with two different languages (en, ur, roman).");
   }
   if (!isConfigured()) return apiError(503, "ai_error", "Translation needs the AI, which is not available right now.");
