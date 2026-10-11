@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { UserCheck, UserPlus, UserRoundSearch, X } from "lucide-react";
 import { t, urduFont, type I18nKey } from "@/lib/i18n";
 import type { IdentityConflict, Lang, PendingIdentity, Person } from "@/lib/types";
@@ -38,6 +38,15 @@ export default function IdentityCheckCard({
   onResolve: (choice: IdentityChoice) => void;
 }) {
   const [showOthersState, setShowOthers] = useState(pending.mode === "move");
+  // The card opens below the report (e.g. after "Not Ammi?"), often off screen: bring it into
+  // view and move focus to it, so the tap visibly does something.
+  const cardRef = useRef<HTMLElement>(null);
+  useEffect(() => {
+    const el = cardRef.current;
+    if (!el) return;
+    el.scrollIntoView({ behavior: "smooth", block: "center" });
+    el.focus({ preventScroll: true });
+  }, []);
   const forPerson = people.find((p) => p.id === pending.forPersonId);
   const forName = forPerson?.name ?? t("familyMember", lang);
   const suggested = pending.suggestedPersonId ? people.find((p) => p.id === pending.suggestedPersonId) : undefined;
@@ -55,9 +64,11 @@ export default function IdentityCheckCard({
 
   return (
     <section
+      ref={cardRef}
+      tabIndex={-1}
       role="group"
       aria-label={pending.mode === "confirm" ? t("idTitle", lang, { name: forName }) : t("idMoveTitle", lang)}
-      className="animate-fade-in rounded-card border border-warn/40 bg-warn-bg p-4"
+      className="animate-fade-in rounded-card border border-warn/40 bg-warn-bg p-4 outline-none"
     >
       <div className="flex items-start gap-3">
         <UserRoundSearch size={24} aria-hidden className="mt-0.5 shrink-0 text-warn" />

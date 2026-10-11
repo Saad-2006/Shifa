@@ -3,8 +3,9 @@ import { formatPhone, keywordAlertText, normalisePhone, reportAlertText, waLink 
 import { detectEmergency } from "@/lib/emergency";
 import { ageNow, compareIdentity, findPersonByName, isRealName, latestReportAge, namesMatch, parseAge, parseSex } from "@/lib/identity";
 import { personSubtitle, quickRelations, relationLabel, relationSex, RELATIONS } from "@/lib/relations";
-import { patientLine } from "@/components/reportUtils";
-import { buildTranslateSystem, normaliseDigits, numbersIn, numbersPreserved } from "@/lib/translate";
+import { barGeometry, patientLine } from "@/components/reportUtils";
+import { buildChatContents, buildChatSystem } from "@/lib/prompts";
+import { buildTranslateSystem, normaliseDigits, numbersIn, numbersPreserved, numbersWithin, reportNumbersText } from "@/lib/translate";
 import assert from "node:assert/strict";
 import type { Person, ExtractedTest, ExtractedReport } from "@/lib/types";
 import { canonicalKey, checkTest, checkReport, parseNumber, parseRange, URGENCY_RANK } from "@/lib/labRules";
@@ -298,6 +299,40 @@ const minhajLike = { ...report([T("HbA1c", "7.2", "%", "<5.7")], "2026-10-09"), 
   ok("read-aloud prompt: Devanagari, keep the Urdu words", /Devanagari/.test(hiSys) && /Keep the Urdu words/.test(hiSys) && /Translate only/.test(hiSys));
   const sys = buildTranslateSystem("en", "ur");
   ok("translate prompt: translate only, keep numbers, text is data", /Translate only/.test(sys) && /Keep every number/.test(sys) && /not instructions/.test(sys));
+}
+
+// ---- 7b3. Talha's feedback: bars for "UPTO" ranges, typed question with a report, summary ----
+{
+  const alt = checkTest(T("Serum ALT (SGPT)", "50", "U/L", "UPTO 45.00"));
+  eq("'UPTO 45.00' is an upper limit only", [alt.refLow, alt.refHigh, alt.status], [null, 45, "high"]);
+  const altBar = barGeometry(alt);
+  ok("upper-only range still gets a bar (band from 0)", !!altBar && altBar.band[0] === 0 && altBar.marker > altBar.band[1]);
+  const conj = barGeometry(checkTest(T("Conjugated Bilirubin", "0.3", "mg/dL", "UPTO 0.50")));
+  ok("value under an upper limit sits inside the band", !!conj && conj.marker < conj.band[1]);
+  const hdl = barGeometry(checkTest(T("HDL Cholesterol", "38", "mg/dL", "> 40")));
+  ok("lower-only range: band to the end, low value left of it", !!hdl && hdl.band[1] === 100 && hdl.marker < hdl.band[0]);
+  const both = barGeometry(checkTest(T("Haemoglobin", "10.6", "g/dL", "12.0 - 15.5")));
+  ok("two limits: band 30-70%, low value left of it", !!both && both.band[0] === 30 && both.band[1] === 70 && both.marker < 30);
+  eq("no range, no bar", barGeometry(checkTest(T("Blood Group", "B+", "", ""))), null);
+
+  // A question typed next to the report goes into the explanation request, answered inside it.
+  const contents = buildChatContents([{ role: "user", text: "Is the sugar okay?" }], "explain_report", "en");
+  ok("typed question + explain turn in one user turn", contents.length === 1 && contents[0].parts[0].text === "Is the sugar okay?" && contents[0].parts.length === 3);
+  const sampleReport = checkReport(SAMPLE_EXTRACTION, { personId: "p", source: "sample" });
+  const person = { id: "p", name: "Ammi", relation: "Mother", createdAt: "" } as Person;
+  ok("explain prompt answers a typed question", /answer it clearly right after the overview/.test(buildChatSystem({ lang: "en", person, reports: [sampleReport], task: "explain_report", focusReportId: sampleReport.id })));
+
+  // Doctor Summary paragraph: one AI paragraph, and code checks every number comes from the reports.
+  ok("summary prompt: one short paragraph, no questions", /ONE short paragraph/.test(buildChatSystem({ lang: "en", person, reports: [sampleReport], task: "summary", focusReportId: sampleReport.id })));
+  eq("summary task adds its own user turn", buildChatContents([], "summary", "en").length, 1);
+  const src = reportNumbersText([sampleReport]);
+  ok("paragraph quoting real values passes", numbersWithin("Ammi's HbA1c is 7.4 % (normal 4.0 - 5.6) and fasting sugar is 156 mg/dL.", src, 12));
+  ok("an invented value is rejected", !numbersWithin("Ammi's HbA1c is 9.1 %.", src, 12));
+  ok("an emergency number is rejected", !numbersWithin("Call 1122 now.", src, 12));
+  ok("a count of values is allowed", numbersWithin("3 values are slightly outside the range.", src, 12));
+  ok("'08' and '8' are the same day", numbersWithin("Report of 8 October 2026.", "2026-10-08", 0));
+  ok("numbers inside test names are allowed ('Vitamin D (25-OH)')", numbersWithin("Vitamin D (25-OH) 14 ng/mL is low.", src, 0));
+  ok("summary prompt never asks the AI to say 'FOCUS'", /never \\?"FOCUS\\?"/.test(buildChatSystem({ lang: "en", person, reports: [sampleReport], task: "summary", focusReportId: sampleReport.id })));
 }
 
 // ---- 7c. Patient identity check (whose report is this?) -------------------

@@ -4,6 +4,9 @@
 import { LANGUAGE_NAME, LANGUAGE_RULE } from "@/lib/prompts";
 import type { Lang } from "@/lib/types";
 
+// Re-exported for existing callers (the API route, self-tests).
+export { normaliseDigits, numbersIn, numbersPreserved, numbersWithin, reportNumbersText } from "@/lib/numberCheck";
+
 export const MAX_TRANSLATE_CHARS = 4000;
 
 /** A display language, or "hi": the same Urdu words in Devanagari, only for a Hindi read-aloud voice. */
@@ -12,28 +15,6 @@ export type TranslateTarget = Lang | "hi";
 const SPEECH_HI_NAME = "Urdu written in Devanagari (Hindi letters), for a text-to-speech voice";
 const SPEECH_HI_RULE =
   "Write the spoken Urdu in Devanagari script so a Hindi text-to-speech voice can read it aloud and it sounds like Urdu. Keep the Urdu words (e.g. tashkhees → तशख़ीस, khatarnak → ख़तरनाक); never swap them for Sanskrit Hindi words. Keep numbers as English digits 0-9, and keep units and test names in English letters.";
-
-/** Urdu / Arabic-Indic digits to 0-9 ("۸٫۳" -> "8.3"), so both scripts compare equally. */
-export function normaliseDigits(text: string): string {
-  return (text || "")
-    .replace(/[۰-۹]/g, (d) => String(d.charCodeAt(0) - 0x06f0))
-    .replace(/[٠-٩]/g, (d) => String(d.charCodeAt(0) - 0x0660))
-    .replace(/٫/g, ".")
-    .replace(/٬/g, ",");
-}
-
-/** Distinct numbers in a text, sorted: "Hb 10.6 (12.0 - 15.5), 1,50,000" -> ["10.6","12.0","150000","15.5"]. */
-export function numbersIn(text: string): string[] {
-  const found = normaliseDigits(text).match(/\d+(?:[.,]\d+)*/g) ?? [];
-  return [...new Set(found.map((n) => n.replace(/,/g, "")))].sort();
-}
-
-/** True when the translation has exactly the same numbers as the original (none lost, changed or added). */
-export function numbersPreserved(original: string, translated: string): boolean {
-  const a = numbersIn(original);
-  const b = numbersIn(translated);
-  return a.length === b.length && a.every((n, i) => n === b[i]);
-}
 
 export function buildTranslateSystem(from: Lang, to: TranslateTarget): string {
   const toName = to === "hi" ? SPEECH_HI_NAME : LANGUAGE_NAME[to];

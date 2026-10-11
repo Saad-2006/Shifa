@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { ArrowLeft, HeartPulse, Printer, ShieldCheck } from "lucide-react";
@@ -9,7 +9,10 @@ import { DangerTag, StatusPill } from "@/components/ValueRow";
 import { buildDoctorQuestions } from "@/components/doctorQuestions";
 import { flaggedTests, personReports, rangeText } from "@/components/reportUtils";
 import { formatDate, t, urduFont } from "@/lib/i18n";
-import { useHydrated, useShifa } from "@/lib/store";
+import { apiFetch } from "@/lib/apiClient";
+import { EMERGENCY_SENTINEL } from "@/lib/emergency";
+import { numbersWithin, reportNumbersText } from "@/lib/numberCheck";
+import { shifa, useHydrated, useShifa } from "@/lib/store";
 import { buildTrends } from "@/lib/trends";
 import type { LabReport, Trend } from "@/lib/types";
 
@@ -43,6 +46,41 @@ export default function SummaryView() {
   const reports = useMemo(() => personReports(state.reports, person?.id), [state.reports, person]);
   const trends = useMemo(() => (person ? safeTrends(state.reports, person.id) : []), [state.reports, person]);
 
+  // "In simple words": one AI paragraph about the latest report, written once per report and
+  // language, then saved. Code checks that every number in it comes from the reports.
+  const newest = reports[0];
+  const ask = state.lang;
+  const saved = newest?.aiSummary?.[ask];
+  const [summaryState, setSummaryState] = useState<"idle" | "writing" | "unavailable">("idle");
+  const requested = useRef("");
+  useEffect(() => {
+    if (!hydrated || !person || !newest || saved) return;
+    const key = `${newest.id}:${ask}`;
+    if (requested.current === key) return;
+    requested.current = key;
+    setSummaryState("writing");
+    const forRequest = reports.slice(0, 6);
+    void (async () => {
+      try {
+        const res = await apiFetch("/api/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ lang: ask, person, reports: forRequest, messages: [], task: "summary", focusReportId: newest.id }),
+        });
+        // Only a real AI paragraph: the offline fallback isn't a summary.
+        if (!res.ok || res.headers.get("x-shifa-offline") === "1") throw new Error("unavailable");
+        const text = (await res.text()).split(EMERGENCY_SENTINEL).join("").trim();
+        const maxCount = Math.min(20, Math.max(...forRequest.map((r) => r.tests.length)));
+        if (!text || !numbersWithin(text, reportNumbersText(forRequest), maxCount)) throw new Error("unsafe");
+        const fresh = shifa.getState().reports.find((r) => r.id === newest.id);
+        if (fresh) shifa.addReport({ ...fresh, aiSummary: { ...fresh.aiSummary, [ask]: text } });
+        setSummaryState("idle");
+      } catch {
+        setSummaryState("unavailable");
+      }
+    })();
+  }, [hydrated, person, newest, saved, ask, reports]);
+
   if (!hydrated) return <p className="p-8 text-muted">Loading…</p>;
 
   if (!person) {
@@ -57,9 +95,8 @@ export default function SummaryView() {
     );
   }
 
-  const latest = reports[0];
+  const latest = newest;
   const flagged = latest ? flaggedTests(latest) : [];
-  const ask = state.lang;
   const questions = buildDoctorQuestions(person, latest, trends, ask);
   const questionsEn = ask === "en" ? [] : buildDoctorQuestions(person, latest, trends, "en");
 
@@ -178,6 +215,28 @@ export default function SummaryView() {
               </li>
             ))}
           </ul>
+        </section>
+      )}
+
+      {latest && (saved || summaryState !== "idle") && (
+        <section className="print-avoid-break mt-6">
+          <h2 className="text-lg font-semibold">
+            <span dir="auto" className={urduFont(ask)}>
+              {t("aiSummaryTitle", ask)}
+            </span>
+          </h2>
+          {saved ? (
+            <>
+              <p dir="auto" className={`mt-1.5 ${ask === "ur" ? "urdu text-base" : "text-sm leading-relaxed"}`}>
+                {saved}
+              </p>
+              <p className={`mt-1 text-xs text-muted ${urduFont(ask)}`}>{t("aiSummaryNote", ask)}</p>
+            </>
+          ) : (
+            <p className={`no-print mt-1 text-sm text-muted ${urduFont(ask)}`}>
+              {summaryState === "writing" ? t("aiSummaryWriting", ask) : t("aiSummaryUnavailable", ask)}
+            </p>
+          )}
         </section>
       )}
 

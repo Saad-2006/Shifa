@@ -84,7 +84,8 @@ export default function TrendChart({ trend, lang }: { trend: Trend; lang: Lang }
         </div>
         <p className="mt-1 text-sm leading-snug text-muted">{trend.summary}</p>
       </figcaption>
-      <div className="mt-2 h-[140px] w-full" role="img" aria-label={trend.summary}>
+      {/* 2:1, so a wider sidebar gives a bigger chart (140–280px tall). */}
+      <div className="mt-2 aspect-[2/1] max-h-[280px] min-h-[140px] w-full" role="img" aria-label={trend.summary}>
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={data} margin={{ top: 8, right: 12, bottom: 0, left: 0 }}>
             <CartesianGrid stroke={GRID} strokeDasharray="0" vertical={false} />

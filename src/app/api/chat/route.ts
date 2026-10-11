@@ -90,7 +90,9 @@ function parseChatRequest(body: unknown): { ok: true; value: ChatRequest } | { o
   if (!body || typeof body !== "object" || Array.isArray(body)) return { ok: false, error: "The request must be a JSON object." };
   const b = body as Record<string, unknown>;
   if (!LANGS.includes(b.lang as Lang)) return { ok: false, error: 'lang must be "en", "ur" or "roman".' };
-  if (b.task !== "explain_report" && b.task !== "chat") return { ok: false, error: 'task must be "explain_report" or "chat".' };
+  if (b.task !== "explain_report" && b.task !== "chat" && b.task !== "summary") {
+    return { ok: false, error: 'task must be "explain_report", "chat" or "summary".' };
+  }
   if (b.reports !== undefined && !Array.isArray(b.reports)) return { ok: false, error: "reports must be an array." };
   if (!Array.isArray(b.messages)) return { ok: false, error: "messages must be an array." };
   const rawReports = (b.reports as unknown[] | undefined) ?? [];

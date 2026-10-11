@@ -104,6 +104,8 @@ export interface LabReport {
   urgencyReasons: string[]; // plain English, built by code
   flaggedCount: number; // tests with status low/high
   patient?: PatientOnReport; // who the report says it is for
+  /** Short AI paragraph for the Doctor Summary, by language (saved once; numbers checked by code). */
+  aiSummary?: Partial<Record<Lang, string>>;
 }
 
 export type ChatRole = "user" | "assistant";
@@ -164,7 +166,7 @@ export interface ChatRequest {
   person: Person;
   reports: LabReport[]; // this person's reports, newest first, max 6
   messages: { role: ChatRole; text: string }[]; // recent turns, max 12, last one is the new user turn
-  task: "explain_report" | "chat";
+  task: "explain_report" | "chat" | "summary"; // summary: one paragraph for the Doctor Summary
   focusReportId?: string; // the report to explain when task = explain_report
 }
 

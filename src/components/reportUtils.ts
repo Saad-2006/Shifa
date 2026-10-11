@@ -118,3 +118,29 @@ export function patientLine(p: PatientOnReport, lang: Lang): string {
     .filter(Boolean)
     .join(" · ");
 }
+
+/**
+ * The range bar for one value: the green normal band and the marker, in % of the track.
+ * - Both limits (12.0 - 15.5): band 30–70%, marker by where the value sits between them.
+ * - Upper limit only ("UPTO 45.00", "< 200"): band from 0 to 60%.
+ * - Lower limit only ("> 40"): band from 40% to the end.
+ * Null when there is nothing honest to draw (no number, or no limit).
+ */
+export function barGeometry(
+  test: Pick<CheckedTest, "numericValue" | "refLow" | "refHigh" | "position">,
+): { band: [number, number]; marker: number } | null {
+  const v = test.numericValue;
+  const lo = test.refLow;
+  const hi = test.refHigh;
+  if (v === null || v === undefined || !Number.isFinite(v)) return null;
+  const clamp = (x: number) => Math.min(98, Math.max(2, x));
+  if (lo !== null && hi !== null && hi > lo) {
+    const pos = test.position ?? (v - lo) / (hi - lo);
+    return { band: [30, 70], marker: clamp(30 + pos * 40) };
+  }
+  if (hi !== null && lo === null && hi > 0 && v >= 0) return { band: [0, 60], marker: clamp((v / hi) * 60) };
+  if (lo !== null && hi === null && lo > 0 && v >= 0) {
+    return { band: [40, 100], marker: clamp(v <= lo ? (v / lo) * 40 : 40 + ((v - lo) / lo) * 40) };
+  }
+  return null;
+}
