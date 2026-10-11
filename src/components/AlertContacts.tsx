@@ -9,7 +9,7 @@ import { formatPhone, normalisePhone } from "@/lib/whatsapp";
 
 const MAX = 3;
 
-/** Up to 3 family WhatsApp numbers for one-tap emergency alerts (saved only on this phone). */
+/** Up to 3 family WhatsApp numbers for one-tap emergency alerts (saved only on this device). */
 export default function AlertContacts({ contacts, lang }: { contacts: AlertContact[]; lang: Lang }) {
   const [adding, setAdding] = useState(false);
   const [name, setName] = useState("");

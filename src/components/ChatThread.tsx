@@ -3,6 +3,7 @@
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { FileText, HeartPulse, Info, Languages, Paperclip, Square, Volume2 } from "lucide-react";
 import { detectEmergency } from "@/lib/emergency";
+import { scrubLabels } from "@/lib/outputScrub";
 import { LANG_SELF_NAME, t, urduFont } from "@/lib/i18n";
 import { canSpeak, onVoicesChanged, primeSpeech, readAloudPlan, speak, stopSpeaking, type VoiceLang } from "@/lib/speech";
 import type { AlertContact, ChatMessage, LabReport, Lang, Person } from "@/lib/types";
@@ -263,7 +264,7 @@ export default function ChatThread({
                     dir={shownLang === "ur" ? "rtl" : undefined}
                     className={`text-[1.0625rem] ${shownLang === "ur" ? "urdu" : "leading-relaxed"}`}
                   >
-                    <Markdown text={shownText} />
+                    <Markdown text={scrubLabels(shownText)} />
                   </div>
                 )}
 

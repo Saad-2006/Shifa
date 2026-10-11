@@ -12,6 +12,7 @@ import { formatDate, t, urduFont } from "@/lib/i18n";
 import { apiFetch } from "@/lib/apiClient";
 import { EMERGENCY_SENTINEL } from "@/lib/emergency";
 import { numbersWithin, reportNumbersText } from "@/lib/numberCheck";
+import { scrubLabels } from "@/lib/outputScrub";
 import { shifa, useHydrated, useShifa } from "@/lib/store";
 import { buildTrends } from "@/lib/trends";
 import type { LabReport, Trend } from "@/lib/types";
@@ -69,7 +70,7 @@ export default function SummaryView() {
         });
         // Only a real AI paragraph: the offline fallback isn't a summary.
         if (!res.ok || res.headers.get("x-shifa-offline") === "1") throw new Error("unavailable");
-        const text = (await res.text()).split(EMERGENCY_SENTINEL).join("").trim();
+        const text = scrubLabels((await res.text()).split(EMERGENCY_SENTINEL).join("")).trim();
         const maxCount = Math.min(20, Math.max(...forRequest.map((r) => r.tests.length)));
         if (!text || !numbersWithin(text, reportNumbersText(forRequest), maxCount)) throw new Error("unsafe");
         const fresh = shifa.getState().reports.find((r) => r.id === newest.id);
