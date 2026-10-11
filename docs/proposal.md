@@ -1,7 +1,7 @@
 # Shifa: Your Family's Lab Reports, Explained in Your Language
 
 **Category:** AI in Healthcare
-**Team:** Saad Mehmood · Talha ⟨surname⟩ · Eman Fatima ⟨confirm⟩ · FAST-NUCES ⟨campus⟩, 5th semester
+**Team:** Saad Mehmood · Talha Hamid · Eman Fatima · FAST-NUCES Lahore, 5th semester
 **Keywords:** Medical Document AI · Urdu NLP · Lab Report Interpretation · Patient Safety · Health Literacy
 **Prototype:** [GitHub repo](https://github.com/Saad-2006/Shifa) · [Live demo](https://shifa-silk.vercel.app) · [2-minute video](⟨add video link⟩)
 

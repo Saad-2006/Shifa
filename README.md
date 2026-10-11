@@ -118,4 +118,4 @@ emergency detector (client) ◀── text stream ──  emergency sentinel, of
 Shifa explains lab reports to help families understand them. It does not diagnose, prescribe, or replace a doctor. In an emergency, call **1122**.
 
 ## Team
-Saad Mehmood · Talha ⟨surname⟩ · Eman Fatima ⟨confirm⟩, FAST-NUCES ⟨campus⟩, 5th semester.
+Saad Mehmood · Talha Hamid · Eman Fatima, FAST-NUCES Lahore, 5th semester.
