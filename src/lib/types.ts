@@ -117,10 +117,12 @@ export interface ChatMessage {
   createdAt: string; // ISO
   reportId?: string; // assistant message that shows a report card
   attachmentName?: string; // user message that attached a file
-  emergency?: boolean; // show the emergency banner with this message
+  emergency?: boolean; // code flagged an emergency for this turn (calm urgent card)
   offline?: boolean; // answer came from the offline fallback, not Gemini
   lang?: Lang;
   pendingIdentity?: PendingIdentity; // "is this report for Ammi?" waiting for the user
+  /** On-demand translations of `text`, for display only (chat history always sends the original). */
+  translations?: Partial<Record<Lang, string>>;
 }
 
 export interface TrendPoint {
@@ -175,6 +177,7 @@ export interface ApiError {
     | "rate_limited"
     | "unauthorized"
     | "ai_error"
+    | "translate_unsafe"
     | "bad_request"
     | "sign_in_required";
 }

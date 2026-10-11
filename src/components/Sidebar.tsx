@@ -9,6 +9,7 @@ import type { AlertContact, LabReport, Lang, Person, Trend } from "@/lib/types";
 import AddPersonForm, { type NewPerson } from "./AddPersonForm";
 import AlertContacts from "./AlertContacts";
 import BackupRestore from "./BackupRestore";
+import LanguageToggle from "./LanguageToggle";
 import ThemeToggle from "./ThemeToggle";
 import { Avatar } from "./PersonMenu";
 import TrendChart from "./TrendChart";
@@ -46,7 +47,10 @@ export default function Sidebar({
   onReset,
   contacts,
   onEditPerson,
+  onChangeLang,
 }: {
+  /** Preferred language: set once here (also asked on the first screen). */
+  onChangeLang: (lang: Lang) => void;
   contacts: AlertContact[];
   onEditPerson: (id: string) => void;
   lang: Lang;
@@ -204,6 +208,12 @@ export default function Sidebar({
       <section className="border-t pt-4">
         <SectionTitle lang={lang}>{t("alertContacts", lang)}</SectionTitle>
         <AlertContacts contacts={contacts} lang={lang} />
+      </section>
+
+      {/* Preferred language: new answers use it; older answers can be translated one by one */}
+      <section className="border-t pt-4">
+        <SectionTitle lang={lang}>{t("prefLanguage", lang)}</SectionTitle>
+        <LanguageToggle lang={lang} onChange={onChangeLang} size="block" label={t("prefLanguage", lang)} />
       </section>
 
       {/* Appearance: System / Light / Dark */}

@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
-import { FileText, HeartPulse, Paperclip, Square, Volume2, WifiOff } from "lucide-react";
+import { FileText, HeartPulse, Languages, Paperclip, Square, Volume2, WifiOff } from "lucide-react";
 import { detectEmergency } from "@/lib/emergency";
-import { t, urduFont } from "@/lib/i18n";
+import { LANG_SELF_NAME, t, urduFont } from "@/lib/i18n";
 import { canSpeak, onVoicesChanged, speak, stopSpeaking } from "@/lib/speech";
 import type { AlertContact, ChatMessage, LabReport, Lang, Person } from "@/lib/types";
 import IdentityCheckCard from "./IdentityCheckCard";
@@ -12,7 +12,9 @@ import ReportCard from "./ReportCard";
 import ScanProgress, { TypingDots } from "./ScanProgress";
 import UrgentCard from "./UrgentCard";
 import { keywordAlertText } from "@/lib/whatsapp";
-import type { IdentityChoice } from "./useShifaChat";
+import { translateMessage, type IdentityChoice } from "./useShifaChat";
+
+const LANGS: Lang[] = ["en", "ur", "roman"];
 
 export interface ScanState {
   messageId: string;
@@ -115,14 +117,36 @@ export default function ChatThread({
     stickRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 160;
   };
 
-  const toggleSpeak = (m: ChatMessage, msgLang: Lang) => {
-    if (speakingId === m.id) {
+  const toggleSpeak = (id: string, text: string, textLang: Lang) => {
+    if (speakingId === id) {
       stopSpeaking();
       setSpeakingId(null);
       return;
     }
-    const ok = speak(m.text, msgLang, () => setSpeakingId((cur) => (cur === m.id ? null : cur)));
-    setSpeakingId(ok ? m.id : null);
+    const ok = speak(text, textLang, () => setSpeakingId((cur) => (cur === id ? null : cur)));
+    setSpeakingId(ok ? id : null);
+  };
+
+  // "Show in: اردو | Roman" under an answer: translated on tap, saved, display only.
+  const [view, setView] = useState<Record<string, Lang>>({});
+  const [translatingId, setTranslatingId] = useState<string | null>(null);
+  const [failedId, setFailedId] = useState<string | null>(null);
+  const showIn = async (m: ChatMessage, to: Lang, original: Lang) => {
+    setFailedId(null);
+    if (speakingId === m.id) {
+      stopSpeaking();
+      setSpeakingId(null);
+    }
+    if (to !== original && !m.translations?.[to]) {
+      setTranslatingId(m.id);
+      const ok = await translateMessage(m.id, to);
+      setTranslatingId(null);
+      if (!ok) {
+        setFailedId(m.id);
+        return;
+      }
+    }
+    setView((v) => ({ ...v, [m.id]: to }));
   };
 
   return (
@@ -153,6 +177,9 @@ export default function ChatThread({
           const hasText = m.text.trim().length > 0;
           const scanning = isBusy && scan?.messageId === m.id;
           const personName = people.find((p) => p.id === m.personId)?.name ?? "";
+          const wanted = view[m.id];
+          const shownLang = wanted && (wanted === msgLang || m.translations?.[wanted]) ? wanted : msgLang;
+          const shownText = shownLang === msgLang ? m.text : (m.translations?.[shownLang] ?? m.text);
           // Typed emergency words (checked by code, never the AI alone): calm card, WhatsApp first.
           const typed = m.emergency && !m.reportId ? typedEmergency(messages, i) : null;
 
@@ -193,9 +220,9 @@ export default function ChatThread({
                   <UrgentCard
                     kind="words"
                     personName={personName}
-                    alertText={keywordAlertText(typed.category, personName, msgLang)}
+                    alertText={keywordAlertText(typed.category, personName, shownLang)}
                     contacts={contacts}
-                    lang={msgLang}
+                    lang={shownLang}
                   />
                 )}
 
@@ -207,20 +234,27 @@ export default function ChatThread({
 
                 {hasText && (
                   <div
-                    lang={msgLang === "ur" ? "ur" : undefined}
-                    dir={msgLang === "ur" ? "rtl" : undefined}
-                    className={`text-[1.0625rem] ${msgLang === "ur" ? "urdu" : "leading-relaxed"}`}
+                    lang={shownLang === "ur" ? "ur" : undefined}
+                    dir={shownLang === "ur" ? "rtl" : undefined}
+                    className={`text-[1.0625rem] ${shownLang === "ur" ? "urdu" : "leading-relaxed"}`}
                   >
-                    <Markdown text={m.text} />
+                    <Markdown text={shownText} />
                   </div>
                 )}
 
-                {hasText && !isBusy && (m.offline || canSpeak(msgLang)) && (
+                {hasText && shownLang !== msgLang && (
+                  <p className={`flex items-center gap-1.5 text-xs text-muted ${urduFont(lang)}`}>
+                    <Languages size={13} aria-hidden />
+                    {t("translatedFrom", lang, { name: LANG_SELF_NAME[msgLang] })}
+                  </p>
+                )}
+
+                {hasText && !isBusy && (
                   <div className="flex flex-wrap items-center gap-1">
-                    {canSpeak(msgLang) && (
+                    {canSpeak(shownLang) && (
                       <button
                         type="button"
-                        onClick={() => toggleSpeak(m, msgLang)}
+                        onClick={() => toggleSpeak(m.id, shownText, shownLang)}
                         aria-pressed={speakingId === m.id}
                         className="-ms-2 inline-flex min-h-11 items-center gap-1.5 rounded-full px-3 text-sm text-muted hover:bg-surface hover:text-ink"
                       >
@@ -238,8 +272,30 @@ export default function ChatThread({
                         <span className="sr-only">: {t("offlineHint", lang)}</span>
                       </span>
                     )}
+                    <span className="inline-flex flex-wrap items-center gap-0.5 text-sm text-muted">
+                      <span className={`px-1 ${urduFont(lang)}`}>{t("showIn", lang)}</span>
+                      {translatingId === m.id ? (
+                        <span role="status" className={`px-2 ${urduFont(lang)}`}>
+                          {t("translating", lang)}
+                        </span>
+                      ) : (
+                        LANGS.filter((l) => l !== shownLang).map((l) => (
+                          <button
+                            key={l}
+                            type="button"
+                            onClick={() => void showIn(m, l, msgLang)}
+                            disabled={translatingId !== null}
+                            className={`inline-flex min-h-11 items-center rounded-full px-2.5 font-medium text-ink underline-offset-4 hover:bg-surface hover:underline disabled:opacity-50 ${l === "ur" ? "text-[1.05em]" : ""}`}
+                          >
+                            <span dir="auto">{LANG_SELF_NAME[l]}</span>
+                          </button>
+                        ))
+                      )}
+                    </span>
                   </div>
                 )}
+
+                {failedId === m.id && <p className={`text-sm text-bad ${urduFont(lang)}`}>{t("translateFailed", lang)}</p>}
               </div>
             </div>
           );

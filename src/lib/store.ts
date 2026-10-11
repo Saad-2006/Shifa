@@ -351,7 +351,9 @@ export const shifa = {
   updateMessage: (id: string, patch: Partial<ChatMessage>): void => {
     const s = current();
     if (!s.messages.some((m) => m.id === id)) return;
-    commit({ ...s, messages: s.messages.map((m) => (m.id === id ? { ...m, ...patch, id: m.id } : m)) });
+    // New text (e.g. re-explained for another person) makes saved translations stale.
+    const stale = patch.text !== undefined && !("translations" in patch) ? { translations: undefined } : {};
+    commit({ ...s, messages: s.messages.map((m) => (m.id === id ? { ...m, ...patch, ...stale, id: m.id } : m)) });
   },
 
   clearChat: (personId: string): void => {

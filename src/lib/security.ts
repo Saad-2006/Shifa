@@ -4,10 +4,10 @@
 import { createHash, timingSafeEqual } from "node:crypto";
 import type { ApiError } from "./types";
 
-type Route = "extract" | "chat" | "health";
+type Route = "extract" | "chat" | "translate" | "health";
 
 /** Requests per minute, per client IP, per route. */
-const LIMITS: Record<Route, number> = { extract: 12, chat: 30, health: 60 };
+const LIMITS: Record<Route, number> = { extract: 12, chat: 30, translate: 20, health: 60 };
 /** Wrong access codes allowed per minute per IP before we answer 429 instead of 401. */
 const AUTH_FAIL_LIMIT = 10;
 const WINDOW_MS = 60_000;

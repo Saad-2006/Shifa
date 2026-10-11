@@ -310,6 +310,14 @@ await test("same-origin: foreign Origin on POST is 403", async () => {
   assert.equal(guardRequest(req("health", { origin: "https://evil.example" }, "GET"), { route: "health" }), null);
 });
 
+await test("rate limit: 21st translation in a minute is 429", () => {
+  delete process.env.SHIFA_ACCESS_CODE;
+  resetRateLimits();
+  const h = { "x-forwarded-for": "203.0.113.9", origin: "http://localhost" };
+  for (let i = 1; i <= 20; i++) assert.equal(guardRequest(req("translate", h), { route: "translate" }), null, `call ${i}`);
+  assert.equal(guardRequest(req("translate", h), { route: "translate" })?.status, 429);
+});
+
 await test("rate limit: 13th extract in a minute is 429", async () => {
   delete process.env.SHIFA_ACCESS_CODE;
   resetRateLimits();

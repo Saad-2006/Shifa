@@ -350,6 +350,23 @@ const dict = {
 
   // Appearance (dark mode)
   appearance: { en: "Appearance", ur: "ظاہری شکل", roman: "Appearance" },
+
+  // Preferred language (set once) and translating one answer on tap
+  prefLanguage: { en: "Preferred language", ur: "پسندیدہ زبان", roman: "Pasandeeda zabaan" },
+  langNoticeTitle: { en: "Preferred language: {name}", ur: "پسندیدہ زبان: {name}", roman: "Pasandeeda zabaan: {name}" },
+  langNoticeBody: {
+    en: "New answers will be in {name}. To translate an older answer, tap {name} under it.",
+    ur: "نئے جوابات {name} میں ہوں گے۔ پرانا جواب ترجمہ کرنے کے لیے اس کے نیچے {name} دبائیں۔",
+    roman: "Naye jawab {name} mein honge. Purana jawab translate karne ke liye us ke neeche {name} dabayein.",
+  },
+  showIn: { en: "Show in:", ur: "اس میں دیکھیں:", roman: "Is mein dekhein:" },
+  translating: { en: "Translating…", ur: "ترجمہ ہو رہا ہے…", roman: "Translate ho raha hai…" },
+  translatedFrom: { en: "Translated from {name}", ur: "{name} سے ترجمہ", roman: "{name} se translate kiya gaya" },
+  translateFailed: {
+    en: "Couldn't translate this safely. Please try again.",
+    ur: "اس کا محفوظ ترجمہ نہیں ہو سکا۔ دوبارہ کوشش کریں۔",
+    roman: "Iska mehfooz translation nahi ho saka. Dobara koshish karein.",
+  },
   themeSystem: { en: "System", ur: "سسٹم", roman: "System" },
   themeLight: { en: "Light", ur: "روشن", roman: "Light" },
   themeDark: { en: "Dark", ur: "گہرا", roman: "Dark" },
@@ -476,6 +493,9 @@ const dict = {
 export type I18nKey = keyof typeof dict;
 
 /** Translate a UI string. `{name}` placeholders are filled from `vars`. */
+/** Each language in its own script, for language pickers and "Show in" links. */
+export const LANG_SELF_NAME: Record<Lang, string> = { en: "English", ur: "اردو", roman: "Roman" };
+
 export function t(key: I18nKey, lang: Lang, vars?: Record<string, string | number>): string {
   const entry: Entry = dict[key];
   let s = entry[lang] ?? entry.en;
