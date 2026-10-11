@@ -60,14 +60,20 @@ export function toneFor(test: CheckedTest): Tone {
 
 export function statusMeta(test: CheckedTest, lang: Lang): { label: string; Icon: LucideIcon; tone: Tone; srLabel: string } {
   const tone = toneFor(test);
+  // Yellow (just outside, within 20% of the limit) says "Slightly high", so it never reads like red.
+  const slight = tone === "warn";
   switch (test.status) {
-    case "low":
-      return { label: t("statusLow", lang), srLabel: t("statusLow", lang), Icon: CircleArrowDown, tone };
-    case "high":
+    case "low": {
+      const label = t(slight ? "statusSlightlyLow" : "statusLow", lang);
+      return { label, srLabel: label, Icon: CircleArrowDown, tone };
+    }
+    case "high": {
       if (test.numericValue === null) {
         return { label: t("statusAbnormal", lang), srLabel: t("statusAbnormal", lang), Icon: CircleAlert, tone };
       }
-      return { label: t("statusHigh", lang), srLabel: t("statusHigh", lang), Icon: CircleArrowUp, tone };
+      const label = t(slight ? "statusSlightlyHigh" : "statusHigh", lang);
+      return { label, srLabel: label, Icon: CircleArrowUp, tone };
+    }
     case "normal":
       return { label: t("statusNormal", lang), srLabel: t("statusNormal", lang), Icon: CircleCheck, tone };
     default:

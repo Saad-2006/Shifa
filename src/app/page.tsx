@@ -277,16 +277,14 @@ function ShifaApp({ state, auth }: { state: ShifaState; auth: ReturnType<typeof 
             onAsk={() => composerRef.current?.focus()}
             onSample={() => void chat.runSample()}
             onLoadDemo={loadDemo}
+            // New phone? Bring family, reports and chats back from a backup file.
+            restoreLink={<BackupRestore lang={lang} busy={chat.busy} variant="link" />}
             footer={
-              <>
-                {/* New phone? Bring reports back from a backup file. */}
-                <BackupRestore lang={lang} busy={chat.busy} variant="link" />
-                {auth.enabled && auth.ready && !auth.user && (
-                  <div className="-mx-3 mt-4">
-                    <AccountCard auth={auth} lang={lang} />
-                  </div>
-                )}
-              </>
+              auth.enabled && auth.ready && !auth.user ? (
+                <div className="-mx-3">
+                  <AccountCard auth={auth} lang={lang} />
+                </div>
+              ) : null
             }
           />
         ) : (

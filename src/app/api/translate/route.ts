@@ -2,7 +2,7 @@ import { EMERGENCY_SENTINEL } from "@/lib/emergency";
 import { GeminiError, generateText, isConfigured } from "@/lib/gemini";
 import { requireSignIn } from "@/lib/authGuard";
 import { guardRequest } from "@/lib/security";
-import { buildTranslateSystem, MAX_TRANSLATE_CHARS, numbersPreserved, type TranslateTarget } from "@/lib/translate";
+import { buildTranslateSystem, MAX_TRANSLATE_CHARS, numbersPreserved, speakableDevanagari, type TranslateTarget } from "@/lib/translate";
 import type { ApiError, Lang } from "@/lib/types";
 
 export const runtime = "nodejs";
@@ -48,10 +48,11 @@ export async function POST(req: Request): Promise<Response> {
         signal: req.signal,
       });
       const translated = out.text.replace(/<\/?answer>/g, "").split(EMERGENCY_SENTINEL).join("").trim();
-      if (translated && numbersPreserved(text, translated)) {
+      // Read-aloud text must be all Devanagari (a Hindi voice skips Urdu-script words).
+      if (translated && numbersPreserved(text, translated) && (to !== "hi" || speakableDevanagari(translated))) {
         return Response.json({ text: translated }, { headers: { "Cache-Control": "no-store", "x-shifa-model": out.model } });
       }
-      console.warn(`[translate] numbers changed (${from} -> ${to}), attempt ${i + 1}`);
+      console.warn(`[translate] check failed (${from} -> ${to}), attempt ${i + 1}`);
     }
     return apiError(422, "translate_unsafe", "The translation changed a number, so it was not shown.");
   } catch (e) {

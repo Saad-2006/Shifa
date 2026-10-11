@@ -14,6 +14,10 @@ type Status = { tone: "ok" | "info" | "bad"; text: string } | null;
  * Backup = download everything on this phone as a .json file; Restore = merge such a file back in.
  * "full" is the drawer section; "link" is a single restore link for the welcome screen (new phone).
  */
+/** Small secondary action on the welcome screen (same look for "Load demo family" and "Restore"). */
+export const ACTION_TILE =
+  "flex min-h-14 w-full items-start gap-2.5 rounded-input border bg-bg px-3 py-2.5 text-start text-sm transition-colors hover:bg-surface disabled:opacity-50";
+
 export default function BackupRestore({
   lang,
   busy = false,
@@ -85,16 +89,14 @@ export default function BackupRestore({
 
   if (variant === "link") {
     return (
-      <div>
+      <div className="min-w-0">
         {input}
-        <button
-          type="button"
-          onClick={() => fileRef.current?.click()}
-          disabled={busy}
-          className={`inline-flex min-h-11 items-center gap-1.5 rounded-input px-1 text-sm text-muted underline underline-offset-4 hover:text-ink disabled:opacity-50 ${urduFont(lang)}`}
-        >
-          <Upload size={15} aria-hidden />
-          {t("restore", lang)}
+        <button type="button" onClick={() => fileRef.current?.click()} disabled={busy} className={ACTION_TILE}>
+          <Upload size={18} aria-hidden className="mt-0.5 shrink-0 text-muted" />
+          <span className="min-w-0">
+            <span className={`block font-medium ${urduFont(lang)}`}>{t("restoreShort", lang)}</span>
+            <span className={`block text-xs text-muted ${urduFont(lang)}`}>{t("restoreWhat", lang)}</span>
+          </span>
         </button>
         {message}
       </div>

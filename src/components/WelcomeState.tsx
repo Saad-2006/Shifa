@@ -2,13 +2,14 @@
 
 import { useState } from "react";
 import type { LucideIcon } from "lucide-react";
-import { FileText, MessageCircleQuestionMark, Plus, ScanLine } from "lucide-react";
+import { FileText, MessageCircleQuestionMark, Plus, ScanLine, Users } from "lucide-react";
 import { t, urduFont } from "@/lib/i18n";
 import type { Lang, Person } from "@/lib/types";
 import AddPersonForm, { type NewPerson } from "./AddPersonForm";
 import LanguageToggle from "./LanguageToggle";
 import { Avatar } from "./PersonMenu";
 import { ShifaAvatar } from "./ChatThread";
+import { ACTION_TILE } from "./BackupRestore";
 
 function BigButton({
   Icon,
@@ -34,14 +35,14 @@ function BigButton({
       disabled={disabled}
       className={`flex min-h-[4.5rem] w-full items-center gap-3 rounded-card border px-4 py-3 text-start transition-colors disabled:opacity-50 sm:flex-col sm:items-start sm:py-4 ${
         primary
-          ? "border-accent bg-accent text-white hover:bg-accent-hover"
+          ? "border-ink bg-ink text-on-ink hover:bg-ink/90"
           : "bg-bg text-ink hover:border-ink/25 hover:bg-surface"
       }`}
     >
       <Icon size={26} aria-hidden className="shrink-0" />
       <span className="min-w-0">
         <span className={`block text-[1.0625rem] font-semibold ${urduFont(lang)}`}>{title}</span>
-        <span className={`block text-sm ${primary ? "text-white/85" : "text-muted"} ${urduFont(lang)}`}>{hint}</span>
+        <span className={`block text-sm ${primary ? "text-on-ink/75" : "text-muted"} ${urduFont(lang)}`}>{hint}</span>
       </span>
     </button>
   );
@@ -60,6 +61,7 @@ export default function WelcomeState({
   onAsk,
   onSample,
   onLoadDemo,
+  restoreLink,
   footer,
 }: {
   lang: Lang;
@@ -73,6 +75,8 @@ export default function WelcomeState({
   onAsk: () => void;
   onSample: () => void;
   onLoadDemo: () => void;
+  /** "Restore a backup" link, shown on one line with "Load demo family". */
+  restoreLink?: React.ReactNode;
   /** Optional block under the main choices (e.g. Google sign-in). */
   footer?: React.ReactNode;
 }) {
@@ -117,7 +121,7 @@ export default function WelcomeState({
                 className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-dashed px-4 text-muted transition-colors hover:border-ink/30 hover:text-ink"
               >
                 <Plus size={18} aria-hidden />
-                <span className={urduFont(lang)}>{t("add", lang)}</span>
+                <span className={urduFont(lang)}>{t("addFamily", lang)}</span>
               </button>
             )}
           </div>
@@ -168,15 +172,16 @@ export default function WelcomeState({
           />
         </div>
 
-        <div className="mt-6">
-          <button
-            type="button"
-            onClick={onLoadDemo}
-            disabled={busy}
-            className={`min-h-11 rounded-input px-1 text-sm text-muted underline underline-offset-4 hover:text-ink disabled:opacity-50 ${urduFont(lang)}`}
-          >
-            {t("loadDemo", lang)}
+        {/* Two secondary actions side by side, same look. */}
+        <div className="mt-4 grid grid-cols-2 gap-2 sm:max-w-md">
+          <button type="button" onClick={onLoadDemo} disabled={busy} className={ACTION_TILE}>
+            <Users size={18} aria-hidden className="mt-0.5 shrink-0 text-muted" />
+            <span className="min-w-0">
+              <span className={`block font-medium ${urduFont(lang)}`}>{t("loadDemo", lang)}</span>
+              <span className={`block text-xs text-muted ${urduFont(lang)}`}>{t("loadDemoHint", lang)}</span>
+            </span>
           </button>
+          {restoreLink}
         </div>
 
         {footer && <div className="mt-6 max-w-sm">{footer}</div>}

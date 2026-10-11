@@ -3,9 +3,9 @@ import { formatPhone, keywordAlertText, normalisePhone, reportAlertText, waLink 
 import { detectEmergency } from "@/lib/emergency";
 import { ageNow, compareIdentity, findPersonByName, isRealName, latestReportAge, namesMatch, parseAge, parseSex } from "@/lib/identity";
 import { personSubtitle, quickRelations, relationLabel, relationSex, RELATIONS } from "@/lib/relations";
-import { barGeometry, patientLine } from "@/components/reportUtils";
+import { barGeometry, patientLine, statusMeta } from "@/components/reportUtils";
 import { buildChatContents, buildChatSystem } from "@/lib/prompts";
-import { buildTranslateSystem, normaliseDigits, numbersIn, numbersPreserved, numbersWithin, reportNumbersText } from "@/lib/translate";
+import { buildTranslateSystem, normaliseDigits, numbersIn, numbersPreserved, numbersWithin, reportNumbersText, speakableDevanagari } from "@/lib/translate";
 import assert from "node:assert/strict";
 import type { Person, ExtractedTest, ExtractedReport } from "@/lib/types";
 import { canonicalKey, checkTest, checkReport, parseNumber, parseRange, URGENCY_RANK } from "@/lib/labRules";
@@ -295,6 +295,8 @@ const minhajLike = { ...report([T("HbA1c", "7.2", "%", "<5.7")], "2026-10-09"), 
   ok("a dropped value is rejected", !numbersPreserved(en, ur.replace("MCV 76 fL۔ ", "")));
   ok("an added number is rejected", !numbersPreserved(en, `${ur} 1122 پر کال کریں۔`));
   ok("a number written as a word is rejected", !numbersPreserved(en, ur.replace("3 مزید", "تین مزید")));
+  ok("read-aloud text: pure Devanagari passes", speakableDevanagari("अम्मी की शुगर (HbA1c 7.4%) ज़्यादा है।"));
+  ok("read-aloud text: Urdu-script words left in are rejected", !speakableDevanagari("अम्मी की शुगर और فاسٹنگ शुगर"));
   const hiSys = buildTranslateSystem("ur", "hi");
   ok("read-aloud prompt: Devanagari, keep the Urdu words", /Devanagari/.test(hiSys) && /Keep the Urdu words/.test(hiSys) && /Translate only/.test(hiSys));
   const sys = buildTranslateSystem("en", "ur");
@@ -315,11 +317,22 @@ const minhajLike = { ...report([T("HbA1c", "7.2", "%", "<5.7")], "2026-10-09"), 
   ok("two limits: band 30-70%, low value left of it", !!both && both.band[0] === 30 && both.band[1] === 70 && both.marker < 30);
   eq("no range, no bar", barGeometry(checkTest(T("Blood Group", "B+", "", ""))), null);
 
+  // Yellow (just outside) says "Slightly high", red (well outside) says "High": they never look alike.
+  eq("ALT 50 (UPTO 45) is 'Slightly high', yellow", [statusMeta(alt, "en").label, statusMeta(alt, "en").tone], ["Slightly high", "warn"]);
+  const alp = checkTest(T("Serum Alkaline Phosphatase", "170", "U/L", "50.00 - 116.00"));
+  eq("ALP 170 (50-116) is 'High', red", [statusMeta(alp, "en").label, statusMeta(alp, "en").tone], ["High", "bad"]);
+  eq("slightly low in Roman", statusMeta(checkTest(T("Haemoglobin", "11.5", "g/dL", "12.0 - 15.5")), "roman").label, "Thora kam");
+
   // A question typed next to the report goes into the explanation request, answered inside it.
   const contents = buildChatContents([{ role: "user", text: "Is the sugar okay?" }], "explain_report", "en");
   ok("typed question + explain turn in one user turn", contents.length === 1 && contents[0].parts[0].text === "Is the sugar okay?" && contents[0].parts.length === 3);
   const sampleReport = checkReport(SAMPLE_EXTRACTION, { personId: "p", source: "sample" });
   const person = { id: "p", name: "Ammi", relation: "Mother", createdAt: "" } as Person;
+  // Talha: less "see a doctor" on every line; practical safe steps; the doctor once, by urgency.
+  const explainSys = buildChatSystem({ lang: "en", person, reports: [sampleReport], task: "explain_report", focusReportId: sampleReport.id });
+  ok("explain prompt: practical steps, doctor only once, no closing disclaimer", /What you can do now/.test(explainSys) && /Mention the doctor only in point 4/.test(explainSys) && !/One closing line/.test(explainSys));
+  ok("explain prompt still forbids medicines and doses", /Never prescribe or name medicines or doses/.test(explainSys));
+  ok("chat prompt: doctor only when needed, once", /only if the question needs one/.test(buildChatSystem({ lang: "en", person, reports: [sampleReport], task: "chat" })));
   ok("explain prompt answers a typed question", /answer it clearly right after the overview/.test(buildChatSystem({ lang: "en", person, reports: [sampleReport], task: "explain_report", focusReportId: sampleReport.id })));
 
   // Doctor Summary paragraph: one AI paragraph, and code checks every number comes from the reports.
