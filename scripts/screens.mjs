@@ -93,11 +93,38 @@ const browser = await chromium.launch({ executablePath: CHROME, headless: true }
   await page.waitForTimeout(300);
   await page.screenshot({ path: `${OUT}/emergency.png` });
 
+  // Drag the sidebar edge wider: it must grow, and double-click puts it back.
+  const sep = page.getByRole("separator", { name: /sidebar wider/i });
+  const box = await sep.boundingBox();
+  const sideWidth = () => page.evaluate(() => document.querySelector("aside")?.getBoundingClientRect().width ?? 0);
+  if (box) {
+    await page.mouse.move(box.x + box.width / 2, box.y + 200);
+    await page.mouse.down();
+    await page.mouse.move(box.x + box.width / 2 + 220, box.y + 200, { steps: 8 });
+    await page.mouse.up();
+  }
+  const wide = await sideWidth();
+  console.log("sidebar dragged wider:", Math.round(wide));
+  if (!(wide > 450)) problems.push(`[sidebar] drag did not widen the sidebar (${wide}px)`);
+  await page.screenshot({ path: `${OUT}/wide-sidebar.png` });
+  await sep.dblclick();
+  await page.waitForTimeout(200);
+  if (Math.round(await sideWidth()) !== 300) problems.push("[sidebar] double-click did not reset the width");
+
   const personId = await page.evaluate(() => JSON.parse(localStorage.getItem("shifa:v1") ?? "{}").activePersonId);
   const summary = await ctx.newPage();
   watch(summary, "summary");
   await summary.goto(`${BASE}/summary?person=${personId}`, { waitUntil: "networkidle" });
-  await summary.waitForTimeout(500);
+  // "In simple words": one AI paragraph, numbers checked by code, saved with the report.
+  await summary.getByText(/Written by AI from the checked values above/).waitFor({ timeout: 120_000 }).catch(() => {});
+  const aiPara = await summary.getByText(/Written by AI from the checked values above/).count();
+  const savedSummary = await summary.evaluate(() => {
+    const s = JSON.parse(localStorage.getItem("shifa:v1") ?? "{}");
+    return (s.reports ?? []).some((r) => r.aiSummary && r.aiSummary.en);
+  });
+  console.log("Doctor Summary has the AI paragraph (checked + saved):", aiPara > 0 && savedSummary);
+  if (!(aiPara > 0 && savedSummary)) problems.push("[summary] no checked AI paragraph on the Doctor Summary");
+  await summary.waitForTimeout(300);
   await summary.screenshot({ path: `${OUT}/summary.png`, fullPage: true });
   await ctx.close();
 }
@@ -193,12 +220,57 @@ const browser = await chromium.launch({ executablePath: CHROME, headless: true }
   await page.evaluate((id) => {
     const s = JSON.parse(localStorage.getItem("shifa:v1"));
     s.activePersonId = id;
+    // Show Abbu's demo report in his chat (LDL "< 130", HDL "> 40": one-sided ranges).
+    s.messages.push({ id: "demo-msg-abbu-test", personId: id, role: "assistant", lang: "en", createdAt: new Date().toISOString(),
+      text: "Abbu's September report.", reportId: "demo-report-abbu-2026-09" });
     localStorage.setItem("shifa:v1", JSON.stringify(s));
   }, abbuId);
   await page.reload({ waitUntil: "networkidle" });
+  await page.waitForTimeout(500);
+
+  // Abbu's demo report has "below 130" (LDL) and "above 40" (HDL): every value gets a bar now.
+  const abbuCard = page.locator("section").filter({ has: page.getByText(/Checked by Shifa rules/) }).first();
+  const rows = await abbuCard.getByRole("button", { name: /Ask about/i }).count();
+  const bars = await abbuCard.locator(".range-marker").count();
+  console.log(`range bars on one-sided ranges: ${bars} bars for ${rows} values`);
+  if (rows === 0 || bars !== rows) problems.push(`[bars] ${bars} bars for ${rows} values on Abbu's report`);
+
+  // "Not Abbu?" opens the options below the card: they must scroll into view.
+  await page.getByRole("button", { name: /Not Abbu\?/ }).first().click();
+  await page.waitForTimeout(900);
+  const optBox = await page.getByRole("group", { name: /Whose report is this/i }).first().boundingBox();
+  const inView = !!optBox && optBox.y < 844 && optBox.y + optBox.height > 0;
+  console.log("'Not Abbu?' options scrolled into view:", inView);
+  if (!inView) problems.push("[identity] options after 'Not Abbu?' are off screen");
+  await page.getByRole("button", { name: /Keep it with Abbu/i }).first().click();
+  await page.waitForTimeout(300);
+
+  // Pasting a screenshot attaches it (nothing is sent until Send).
+  await page.locator("textarea").evaluate(async (el) => {
+    const blob = await (await fetch("/samples/sample-report.png")).blob();
+    const dt = new DataTransfer();
+    dt.items.add(new File([blob], "image.png", { type: "image/png" }));
+    el.dispatchEvent(new ClipboardEvent("paste", { clipboardData: dt, bubbles: true, cancelable: true }));
+  });
+  await page.waitForTimeout(300);
+  const pasted = await page.getByText(/Ready: press Send/).count();
+  console.log("pasted image waits in the composer:", pasted > 0);
+  if (!pasted) problems.push("[composer] pasting an image did not attach it");
+  await page.getByRole("button", { name: /Remove attachment/i }).click();
+
+  // Attach, type a question, then Send: the report is checked and the question goes with it.
   const before = (await state()).reports.length;
+  const msgsBefore = (await state()).messages.length;
   await page.locator('input[type=file][accept="image/*,application/pdf"]').first().setInputFiles("public/samples/sample-report.png");
+  await page.waitForTimeout(400);
+  const notSentYet = (await state()).messages.length === msgsBefore && (await page.getByText(/Ready: press Send/).count()) > 0;
+  console.log("attached report waits for Send (question can be added):", notSentYet);
+  if (!notSentYet) problems.push("[composer] attaching a file sent it right away");
+  await page.locator("textarea").fill("Is the sugar okay?");
+  await page.keyboard.press("Enter");
   await page.getByText(/Is this report for Abbu\?/i).first().waitFor({ timeout: 180_000 });
+  const withNote = (await state()).messages.some((m) => m.role === "user" && m.attachmentName && m.text === "Is the sugar okay?");
+  if (!withNote) problems.push("[composer] the question typed with the report was not sent with it");
   const addedEarly = (await state()).reports.length - before;
   console.log("identity: card shown for Abbu, reports added before choosing:", addedEarly);
   if (addedEarly !== 0) problems.push("[identity] a report was added before the user chose who it's for");

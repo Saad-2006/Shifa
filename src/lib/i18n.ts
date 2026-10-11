@@ -91,6 +91,14 @@ const dict = {
     roman: "Report ke baare mein kuch bhi poochein…",
   },
   camera: { en: "Take a photo of a report", ur: "رپورٹ کی تصویر لیں", roman: "Report ki photo lein" },
+  placeholderWithFile: {
+    en: "Add a question about this report (optional)…",
+    ur: "اس رپورٹ کے بارے میں سوال لکھیں (اختیاری)…",
+    roman: "Is report ke baare mein sawal likhein (zaroori nahi)…",
+  },
+  attachedReport: { en: "Report", ur: "رپورٹ", roman: "Report" },
+  attachedHint: { en: "Ready: press Send to check it", ur: "تیار ہے: چیک کرنے کے لیے بھیجیں دبائیں", roman: "Tayyar hai: check karne ke liye Send dabayein" },
+  removeAttachment: { en: "Remove attachment", ur: "اٹیچمنٹ ہٹائیں", roman: "Attachment hatayein" },
   attach: { en: "Attach a photo or PDF", ur: "تصویر یا PDF لگائیں", roman: "Photo ya PDF lagayein" },
   mic: { en: "Speak your question", ur: "اپنا سوال بولیں", roman: "Apna sawal bolein" },
   micStop: { en: "Stop listening", ur: "سننا بند کریں", roman: "Sunna band karein" },
@@ -358,6 +366,18 @@ const dict = {
   appearance: { en: "Appearance", ur: "ظاہری شکل", roman: "Appearance" },
 
   // Doctor Summary: questions to ask the doctor (built by code), in the preferred language
+  aiSummaryTitle: { en: "In simple words", ur: "آسان الفاظ میں", roman: "Asaan alfaaz mein" },
+  aiSummaryNote: {
+    en: "Written by AI from the checked values above. Every number was checked against the report. Not a diagnosis.",
+    ur: "یہ AI نے اوپر کی چیک شدہ ویلیوز سے لکھا ہے۔ ہر نمبر رپورٹ سے ملایا گیا ہے۔ یہ تشخیص نہیں ہے۔",
+    roman: "Ye AI ne upar ki check ki hui values se likha hai. Har number report se milaya gaya hai. Ye tashkhees nahi hai.",
+  },
+  aiSummaryWriting: { en: "Writing a short summary…", ur: "مختصر خلاصہ لکھا جا رہا ہے…", roman: "Mukhtasar khulasa likha ja raha hai…" },
+  aiSummaryUnavailable: {
+    en: "A short summary isn't available right now.",
+    ur: "ابھی مختصر خلاصہ دستیاب نہیں۔",
+    roman: "Abhi mukhtasar khulasa dastyab nahi.",
+  },
   dqTitle: { en: "Questions to ask the doctor", ur: "ڈاکٹر سے پوچھنے کے سوالات", roman: "Doctor se poochne ke sawal" },
   dqWhoSelf: { en: "me", ur: "میرے", roman: "Mere" },
   dqWhoOther: { en: "{name}", ur: "{name} کے", roman: "{name} ke" },
@@ -396,6 +416,11 @@ const dict = {
   printSummary: { en: "Print / Save as PDF", ur: "پرنٹ / PDF محفوظ کریں", roman: "Print / PDF save karein" },
 
   // Preferred language (set once) and translating one answer on tap
+  resizeSidebar: {
+    en: "Drag to make the sidebar wider (double-click to reset)",
+    ur: "سائیڈبار چوڑی کرنے کے لیے کھینچیں (واپس کے لیے ڈبل کلک)",
+    roman: "Sidebar chori karne ke liye khenchein (reset ke liye double-click)",
+  },
   prefLanguage: { en: "Preferred language", ur: "پسندیدہ زبان", roman: "Pasandeeda zabaan" },
   langNoticeTitle: { en: "Preferred language: {name}", ur: "پسندیدہ زبان: {name}", roman: "Pasandeeda zabaan: {name}" },
   langNoticeBody: {

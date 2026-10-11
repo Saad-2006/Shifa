@@ -383,8 +383,13 @@ export function buildChatSystem(o: ChatSystemInput): string {
       `3. What to do next, matching the report's urgency exactly: emergency = get checked by a doctor today, or the ER if they feel unwell (not an ambulance call); soon = see a doctor this week; routine = mention it at the next regular visit; normal = nothing urgent, keep regular check-ups.${focus ? ` This report's urgency is "${focus.urgency}".` : ""}`,
       "4. 2-3 short questions to ask the doctor, as bullets.",
       "5. One closing line saying Shifa helps you understand the report but does not replace a doctor.",
+      "If the user sent a question or note with the report (their latest message), answer it clearly right after the overview, using the same rules.",
     );
     if (!focus) lines.push("There is no report in the data: say so kindly and ask them to attach a lab report photo or PDF.");
+  } else if (task === "summary") {
+    lines.push(
+      "TASK: write ONE short paragraph (50-90 words) for the family, printed on the Doctor Summary above the questions for the doctor. It is about the newest report (the one marked FOCUS in the data; call it by its date and lab, e.g. \"the 8 October 2026 report\", never \"FOCUS\"). In plain words, say what its values outside the normal range are commonly linked to (gently, never a diagnosis), then give the next step that matches its urgency exactly. Mention only the most important values, each with its unit, using only numbers from the data. No greeting, no bullets, no list of questions (they are printed separately), no closing line.",
+    );
   } else {
     lines.push(
       "TASK: answer the user's latest message in at most 120 words. Do not greet (no Salam, Walaikum Salam, Hello or 'beta'). Answer the question directly first, then one helpful next step if useful. Use the newest report unless they ask about another; if older reports have the same test, you may mention the change, quoting both values and dates.",
@@ -401,6 +406,13 @@ const EXPLAIN_TURN: Record<Lang, string> = {
   en: "Please explain this report to me in simple words.",
   ur: "براہ کرم یہ رپورٹ مجھے آسان الفاظ میں سمجھائیں۔",
   roman: "Meherbani karke ye report mujhe asaan alfaaz mein samjhaein.",
+};
+
+/** Hidden user turn appended for task = summary (the Doctor Summary paragraph). */
+const SUMMARY_TURN: Record<Lang, string> = {
+  en: "Please write the short summary paragraph for the Doctor Summary.",
+  ur: "براہ کرم ڈاکٹر سمری کے لیے مختصر خلاصہ لکھیں۔",
+  roman: "Meherbani karke Doctor Summary ke liye mukhtasar khulasa likhein.",
 };
 
 /** Hidden user turn appended for task = explain_report. */
@@ -426,6 +438,7 @@ export function buildChatContents(messages: ChatRequest["messages"], task: ChatR
     turns.push({ role: m.role === "assistant" ? "model" : "user", text });
   }
   if (task === "explain_report") turns.push({ role: "user", text: explainTaskUserTurn(lang) });
+  if (task === "summary") turns.push({ role: "user", text: SUMMARY_TURN[lang] ?? SUMMARY_TURN.en });
 
   const out: ChatContent[] = [];
   for (const t of turns) {

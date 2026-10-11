@@ -4,26 +4,24 @@ import { useEffect, useState } from "react";
 import { MessageCircleQuestionMark, TriangleAlert } from "lucide-react";
 import { t, urduFont } from "@/lib/i18n";
 import type { CheckedTest, Lang } from "@/lib/types";
-import { TONE_CLASSES, TONE_DOT, formatValue, rangeText, statusMeta, type Tone } from "./reportUtils";
+import { TONE_CLASSES, TONE_DOT, barGeometry, formatValue, rangeText, statusMeta, type Tone } from "./reportUtils";
 
-/**
- * Where the value sits against the report's own normal range.
- * Normal band = 30%–70% of the track; marker = 30% + position × 40%, clamped 2–98%.
- */
-export function RangeBar({ position, tone }: { position: number | null; tone: Tone }) {
+/** Where the value sits against the normal range (see barGeometry: works for "UPTO 45" too). */
+export function RangeBar({ test, tone }: { test: CheckedTest; tone: Tone }) {
   const [settled, setSettled] = useState(false);
   useEffect(() => {
     const id = requestAnimationFrame(() => setSettled(true));
     return () => cancelAnimationFrame(id);
   }, []);
-  if (position === null || !Number.isFinite(position)) return null;
-  const left = Math.min(98, Math.max(2, 30 + position * 40));
+  const g = barGeometry(test);
+  if (!g) return null;
+  const [from, to] = g.band;
   return (
     <div className="relative mt-2.5 h-2 rounded-full bg-border" aria-hidden>
-      <div className="absolute inset-y-0 left-[30%] w-[40%] rounded-[2px] bg-ok/25" />
+      <div className="absolute inset-y-0 rounded-[2px] bg-ok/25" style={{ left: `${from}%`, width: `${to - from}%` }} />
       <div
         className={`range-marker absolute top-1/2 h-4 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white ring-1 ring-black/10 ${TONE_DOT[tone]}`}
-        style={{ left: `${settled ? left : 50}%` }}
+        style={{ left: `${settled ? g.marker : (from + to) / 2}%` }}
       />
     </div>
   );
@@ -98,7 +96,7 @@ export default function ValueRow({
         </div>
       </div>
       {showReason && test.criticalReason && <p className="mt-1 text-sm text-bad">{test.criticalReason}</p>}
-      <RangeBar position={test.position} tone={meta.tone} />
+      <RangeBar test={test} tone={meta.tone} />
     </div>
   );
 }

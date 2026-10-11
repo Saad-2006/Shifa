@@ -171,6 +171,19 @@ export async function translateMessage(messageId: string, to: TranslateTarget): 
   }
 }
 
+/** The question the user typed next to the report this answer explains (the user message just before it). */
+function noteWithReport(messageId: string): string {
+  const all = shifa.getState().messages;
+  const i = all.findIndex((m) => m.id === messageId);
+  if (i < 0) return "";
+  for (let j = i - 1; j >= 0; j--) {
+    const m = all[j];
+    if (m.personId !== all[i].personId) continue;
+    return m.role === "user" && m.attachmentName ? m.text.trim() : "";
+  }
+  return "";
+}
+
 export type IdentityChoice = { kind: "person"; personId: string } | { kind: "new" } | { kind: "cancel" };
 
 function freshPerson(fallback: Person): Person {
@@ -275,14 +288,19 @@ export function useShifaChat() {
   /** Shared by "scan a report" and "try a sample report". */
   const runExtraction = async (
     getPayload: () => Promise<UploadPayload>,
-    opts: { sample: boolean; attachmentName: string },
+    opts: { sample: boolean; attachmentName: string; note?: string },
   ) => {
     if (!begin()) return;
     const lang = shifa.getState().lang;
     let placeholderId: string | null = null;
     try {
       const { person, created } = ensurePersonInfo();
-      const userMsg = shifa.addMessage({ personId: person.id, role: "user", text: "", attachmentName: opts.attachmentName });
+      const userMsg = shifa.addMessage({
+        personId: person.id,
+        role: "user",
+        text: (opts.note ?? "").trim().slice(0, 2000), // the question typed next to the report, if any
+        attachmentName: opts.attachmentName,
+      });
       const placeholder = shifa.addMessage({ personId: person.id, role: "assistant", text: "", lang });
       placeholderId = placeholder.id;
       setBusyMessageId(placeholder.id);
@@ -394,13 +412,14 @@ export function useShifaChat() {
     if (explainLang !== lang) shifa.updateMessage(messageId, { lang: explainLang });
     const person = shifa.getState().people.find((p) => p.id === personId);
     if (!person) return;
+    const note = noteWithReport(messageId);
     try {
       await streamChat(
         {
           lang: explainLang,
           person,
           reports: reportsForRequest(personId, reportId),
-          messages: [],
+          messages: note ? [{ role: "user", text: note }] : [], // answered inside the explanation
           task: "explain_report",
           focusReportId: reportId,
         },
@@ -480,8 +499,8 @@ export function useShifaChat() {
     });
   };
 
-  const scanFile = (file: File) =>
-    runExtraction(() => fileToPayload(file), { sample: false, attachmentName: file.name || "report" });
+  const scanFile = (file: File, note = "") =>
+    runExtraction(() => fileToPayload(file), { sample: false, attachmentName: file.name || "report", note });
 
   const runSample = () =>
     runExtraction(

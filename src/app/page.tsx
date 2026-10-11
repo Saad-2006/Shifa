@@ -22,6 +22,7 @@ import { LANG_SELF_NAME, t } from "@/lib/i18n";
 import { shifa, useHydrated, useShifa, type ShifaState } from "@/lib/store";
 import { useAuth } from "@/lib/useAuth";
 import { relationSex } from "@/lib/relations";
+import SidebarResizer, { useSidebarWidth } from "@/components/SidebarResizer";
 
 export default function Home() {
   const hydrated = useHydrated();
@@ -77,6 +78,7 @@ function ShifaApp({ state, auth }: { state: ShifaState; auth: ReturnType<typeof 
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [sheetId, setSheetId] = useState<string | null>(null);
   const [editPersonId, setEditPersonId] = useState<string | null>(null);
+  const [sidebarWidth, setSidebarWidth] = useSidebarWidth();
   // "Preferred language: Urdu. New answers will be in Urdu…" after changing it in the sidebar.
   const [langNotice, setLangNotice] = useState(false);
   useEffect(() => {
@@ -177,9 +179,12 @@ function ShifaApp({ state, auth }: { state: ShifaState; auth: ReturnType<typeof 
   return (
     <div className="flex h-dvh overflow-hidden">
       {/* Sidebar: fixed on large screens */}
-      <aside className="hidden w-[300px] shrink-0 overflow-y-auto border-r bg-surface lg:block" aria-label={t("family", lang)}>
-        {sidebar}
-      </aside>
+      <div className="relative hidden shrink-0 lg:flex" style={{ width: sidebarWidth }}>
+        <aside className="w-full overflow-y-auto border-r bg-surface" aria-label={t("family", lang)}>
+          {sidebar}
+        </aside>
+        <SidebarResizer width={sidebarWidth} onChange={setSidebarWidth} lang={lang} />
+      </div>
 
       {/* Drawer on phones and tablets */}
       {drawerOpen && (
@@ -317,7 +322,7 @@ function ShifaApp({ state, auth }: { state: ShifaState; auth: ReturnType<typeof 
               lang={lang}
               busy={chat.busy}
               onSend={(text) => void chat.sendText(text)}
-              onFile={(file) => void chat.scanFile(file)}
+              onFile={(file, note) => void chat.scanFile(file, note)}
             />
             <Disclaimer lang={lang} />
           </div>
