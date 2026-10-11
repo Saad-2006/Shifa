@@ -1,6 +1,6 @@
 // Demo family and the sample report. Everything here is FICTIONAL.
 // Flags and urgency are never hard-coded: every report goes through labRules.checkReport.
-import type { ChatMessage, ExtractedReport, ExtractedTest, LabReport, Person } from "@/lib/types";
+import type { ChatMessage, ExtractedReport, ExtractedTest, LabReport, Lang, Person } from "@/lib/types";
 import { checkReport } from "@/lib/labRules";
 
 /** Compact test builder: [panel, name, value, unit, refRangeText, refLow, refHigh, flag]. */
@@ -103,7 +103,28 @@ export const DEMO_IDS = {
   ammiMsg: "demo-msg-ammi-1",
 } as const;
 
-export function buildDemoFamily(now: Date = new Date()): {
+// Shifa's first answer in the demo, written in all three languages so it follows the preferred
+// language (the other two are saved as ready translations, so "Show in" works instantly, offline).
+// Every version has the same numbers (checked by the self-test).
+export const DEMO_ANSWER: Record<Lang, string> = {
+  en:
+    "In Ammi's October report, her sugar (HbA1c 7.4%) and fasting sugar (156) are high, and have gone up since March (6.1%). " +
+    "Her haemoglobin (Hb 10.6) is a little low, and Vitamin D is low too. No value is at a danger level, but please show this report to a doctor this week. " +
+    "This is not a diagnosis; the report card above shows every value.",
+  roman:
+    "Ammi ki October ki report mein sugar (HbA1c 7.4%) aur fasting sugar (156) zyada hain, aur March (6.1%) se barh gayi hain. " +
+    "Khoon (Hb 10.6) thora kam hai aur Vitamin D bhi kam hai. Koi value khatarnak level par nahi hai, lekin is hafte doctor ko zaroor dikhayein. " +
+    "Ye tashkhees (diagnosis) nahi hai; upar report card mein har value ki tafseel hai.",
+  ur:
+    "امی کی اکتوبر کی رپورٹ میں شوگر (HbA1c 7.4%) اور فاسٹنگ شوگر (156) زیادہ ہیں، اور مارچ (6.1%) سے بڑھ گئی ہیں۔ " +
+    "خون (Hb 10.6) تھوڑا کم ہے اور وٹامن ڈی بھی کم ہے۔ کوئی ویلیو خطرناک حد پر نہیں ہے، لیکن اس ہفتے ڈاکٹر کو ضرور دکھائیں۔ " +
+    "یہ تشخیص (diagnosis) نہیں ہے؛ اوپر رپورٹ کارڈ میں ہر ویلیو کی تفصیل ہے۔",
+};
+
+export function buildDemoFamily(
+  now: Date = new Date(),
+  lang: Lang = "roman",
+): {
   people: Person[];
   reports: LabReport[];
   messages: ChatMessage[];
@@ -131,12 +152,10 @@ export function buildDemoFamily(now: Date = new Date()): {
       personId: DEMO_IDS.ammi,
       role: "assistant",
       reportId: DEMO_IDS.ammiOct,
-      lang: "roman",
+      lang,
       createdAt: nowIso,
-      text:
-        "Ammi ki October ki report mein sugar (HbA1c 7.4%) aur fasting sugar (156) zyada hain, aur March (6.1%) se barh gaye hain. " +
-        "Khoon (Hb 10.6) thora kam hai aur Vitamin D bhi kam hai. Koi khatarnaak value nahi hai, lekin is hafte doctor ko zaroor dikhayein. " +
-        "Yeh tashkhees (diagnosis) nahi hai; neeche har value ki tafseel hai.",
+      text: DEMO_ANSWER[lang],
+      translations: Object.fromEntries((Object.keys(DEMO_ANSWER) as Lang[]).filter((l) => l !== lang).map((l) => [l, DEMO_ANSWER[l]])),
     },
   ];
 

@@ -351,6 +351,44 @@ const dict = {
   // Appearance (dark mode)
   appearance: { en: "Appearance", ur: "ظاہری شکل", roman: "Appearance" },
 
+  // Doctor Summary: questions to ask the doctor (built by code), in the preferred language
+  dqTitle: { en: "Questions to ask the doctor", ur: "ڈاکٹر سے پوچھنے کے سوالات", roman: "Doctor se poochne ke sawal" },
+  dqWhoSelf: { en: "me", ur: "میرے", roman: "Mere" },
+  dqWhoOther: { en: "{name}", ur: "{name} کے", roman: "{name} ke" },
+  dqNormal: { en: " (normal {range})", ur: " (نارمل {range})", roman: " (normal {range})" },
+  dqDanger: {
+    en: "{test} is {value}{normal}, which Shifa marked as a danger level. Does this need treatment today?",
+    ur: "{test} {value}{normal} ہے، جسے شفا نے خطرناک حد پر بتایا ہے۔ کیا اس کا آج ہی علاج ضروری ہے؟",
+    roman: "{test} {value}{normal} hai, jise Shifa ne khatarnak level par bataya hai. Kya iska aaj hi ilaaj zaroori hai?",
+  },
+  dqFlagged: {
+    en: "{test} is {value}{normal}. What does this mean for {who}, and what should we do next?",
+    ur: "{test} {value}{normal} ہے۔ {who} لیے اس کا کیا مطلب ہے، اور اب کیا کرنا چاہیے؟",
+    roman: "{test} {value}{normal} hai. {who} liye iska kya matlab hai, aur ab kya karna chahiye?",
+  },
+  dqTrend: {
+    en: "{test} went from {from} ({fromDate}) to {to} ({toDate}). Is this change a concern, and how should we track it?",
+    ur: "{test} {fromDate} میں {from} تھا، {toDate} میں {to} ہو گیا۔ کیا یہ تبدیلی فکر کی بات ہے، اور اسے کیسے دیکھتے رہیں؟",
+    roman: "{test} {fromDate} mein {from} tha, {toDate} mein {to} ho gaya. Kya ye tabdeeli fikr ki baat hai, aur isay kaise dekhte rahein?",
+  },
+  dqRepeat: {
+    en: "Which of these tests should be repeated, and when?",
+    ur: "ان میں سے کون سے ٹیسٹ دوبارہ کروانے چاہئیں، اور کب؟",
+    roman: "In mein se kaun se tests dobara karwane chahiye, aur kab?",
+  },
+  dqLifestyle: {
+    en: "Could any current medicines, diet or lifestyle explain these results?",
+    ur: "کیا موجودہ دوائیں، خوراک یا رہن سہن ان نتائج کی وجہ ہو سکتے ہیں؟",
+    roman: "Kya maujooda dawaiyan, khoraak ya lifestyle in results ki wajah ho sakte hain?",
+  },
+  dqAllNormal: {
+    en: "All values were in the normal range. When should these tests be repeated?",
+    ur: "تمام ویلیوز نارمل حد میں تھیں۔ یہ ٹیسٹ دوبارہ کب کروانے چاہئیں؟",
+    roman: "Tamam values normal had mein thin. Ye tests dobara kab karwane chahiye?",
+  },
+  backToShifa: { en: "Back to Shifa", ur: "شفا پر واپس", roman: "Shifa par wapas" },
+  printSummary: { en: "Print / Save as PDF", ur: "پرنٹ / PDF محفوظ کریں", roman: "Print / PDF save karein" },
+
   // Preferred language (set once) and translating one answer on tap
   prefLanguage: { en: "Preferred language", ur: "پسندیدہ زبان", roman: "Pasandeeda zabaan" },
   langNoticeTitle: { en: "Preferred language: {name}", ur: "پسندیدہ زبان: {name}", roman: "Pasandeeda zabaan: {name}" },

@@ -6,13 +6,15 @@ import { useSearchParams } from "next/navigation";
 import { ArrowLeft, HeartPulse, Printer, ShieldCheck } from "lucide-react";
 import UrgencyBadge from "@/components/UrgencyBadge";
 import { DangerTag, StatusPill } from "@/components/ValueRow";
-import { flaggedTests, formatValue, personReports, rangeText } from "@/components/reportUtils";
-import { formatDate } from "@/lib/i18n";
+import { buildDoctorQuestions } from "@/components/doctorQuestions";
+import { flaggedTests, personReports, rangeText } from "@/components/reportUtils";
+import { formatDate, t, urduFont } from "@/lib/i18n";
 import { useHydrated, useShifa } from "@/lib/store";
 import { buildTrends } from "@/lib/trends";
-import type { LabReport, Person, Trend } from "@/lib/types";
+import type { LabReport, Trend } from "@/lib/types";
 
-// The summary is for the doctor, so it is always in English.
+// The summary is for the doctor, so it is in English. The questions are for the family to ask,
+// so they follow the preferred language, with the English line under each for the doctor.
 const LANG = "en" as const;
 
 function todayISO(): string {
@@ -26,37 +28,6 @@ function safeTrends(reports: LabReport[], personId: string): Trend[] {
   } catch {
     return [];
   }
-}
-
-/** Questions built by code from the flagged values and trends (no AI). */
-function buildQuestions(person: Person, latest: LabReport | undefined, trends: Trend[]): string[] {
-  const self = /^(self|me)$/i.test(person.relation.trim()) || /^me$/i.test(person.name.trim());
-  const whose = self ? "My" : `${person.name}'s`;
-  const forWhom = self ? "me" : person.name;
-  const qs: string[] = [];
-  if (!latest) return qs;
-  const flagged = flaggedTests(latest);
-  for (const test of flagged.slice(0, 6)) {
-    const range = rangeText(test);
-    const normal = range ? ` (normal ${range})` : "";
-    if (test.critical) {
-      qs.push(
-        `${whose} ${test.name} is ${formatValue(test)}${normal}, which Shifa marked as a danger level: does this need treatment today?`,
-      );
-    } else {
-      qs.push(`${whose} ${test.name} is ${formatValue(test)}${normal}: what does this mean for ${forWhom}, and what should we do next?`);
-    }
-  }
-  for (const tr of trends.filter((x) => x.direction !== "flat" && x.latestStatus !== "normal").slice(0, 2)) {
-    qs.push(`${tr.summary.replace(/[.\s]+$/, "")}. Is this change a concern, and how should we track it?`);
-  }
-  if (flagged.length > 0) {
-    qs.push("Which of these tests should be repeated, and when?");
-    qs.push(`Could any current medicines, diet or lifestyle explain these results for ${forWhom}?`);
-  } else {
-    qs.push(`All values were in the normal range. When should ${forWhom === "me" ? "I" : forWhom} repeat these tests?`);
-  }
-  return qs;
 }
 
 export default function SummaryView() {
@@ -88,20 +59,22 @@ export default function SummaryView() {
 
   const latest = reports[0];
   const flagged = latest ? flaggedTests(latest) : [];
-  const questions = buildQuestions(person, latest, trends);
+  const ask = state.lang;
+  const questions = buildDoctorQuestions(person, latest, trends, ask);
+  const questionsEn = ask === "en" ? [] : buildDoctorQuestions(person, latest, trends, "en");
 
   return (
     <main className="print-sheet mx-auto max-w-[820px] px-4 py-6 sm:px-8 sm:py-10">
       <div className="no-print mb-6 flex flex-wrap items-center justify-between gap-2">
         <Link href="/" className="inline-flex min-h-11 items-center gap-2 rounded-input px-2 text-muted hover:text-ink">
-          <ArrowLeft size={18} aria-hidden /> Back to Shifa
+          <ArrowLeft size={18} aria-hidden /> <span className={urduFont(ask)}>{t("backToShifa", ask)}</span>
         </Link>
         <button
           type="button"
           onClick={() => window.print()}
           className="inline-flex min-h-11 items-center gap-2 rounded-input bg-accent px-5 font-semibold text-white hover:bg-accent-hover"
         >
-          <Printer size={18} aria-hidden /> Print / Save as PDF
+          <Printer size={18} aria-hidden /> <span className={urduFont(ask)}>{t("printSummary", ask)}</span>
         </button>
       </div>
 
@@ -210,10 +183,20 @@ export default function SummaryView() {
 
       {questions.length > 0 && (
         <section className="print-avoid-break mt-6">
-          <h2 className="text-lg font-semibold">Questions to ask the doctor</h2>
-          <ol className="mt-2 list-decimal space-y-1.5 ps-5 text-sm">
+          <h2 className="text-lg font-semibold">
+            <span dir="auto" className={urduFont(ask)}>
+              {t("dqTitle", ask)}
+            </span>
+            {ask !== "en" && <span className="text-base font-normal text-muted"> · {t("dqTitle", "en")}</span>}
+          </h2>
+          <ol className="mt-2 list-decimal space-y-2 ps-5 text-sm">
             {questions.map((q, i) => (
-              <li key={i}>{q}</li>
+              <li key={i}>
+                <p dir="auto" className={ask === "ur" ? "urdu text-base" : ""}>
+                  {q}
+                </p>
+                {questionsEn[i] && <p className="text-xs text-muted">{questionsEn[i]}</p>}
+              </li>
             ))}
           </ol>
         </section>
