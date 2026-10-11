@@ -14,7 +14,12 @@ export type TranslateTarget = Lang | "hi";
 
 const SPEECH_HI_NAME = "Urdu written in Devanagari (Hindi letters), for a text-to-speech voice";
 const SPEECH_HI_RULE =
-  "Write the spoken Urdu in Devanagari script so a Hindi text-to-speech voice can read it aloud and it sounds like Urdu. Keep the Urdu words (e.g. tashkhees → तशख़ीस, khatarnak → ख़तरनाक); never swap them for Sanskrit Hindi words. Keep numbers as English digits 0-9, and keep units and test names in English letters.";
+  "Write the spoken Urdu in Devanagari script so a Hindi text-to-speech voice can read it aloud and it sounds like Urdu. Keep the Urdu words (e.g. tashkhees → तशख़ीस, khatarnak → ख़तरनाक); never swap them for Sanskrit Hindi words. Every word must be in Devanagari letters: not a single Urdu (Arabic-script) letter. Keep numbers as English digits 0-9, and keep units and test names in English letters.";
+
+/** Code check for read-aloud text: a Hindi voice can't read Urdu-script letters, so none may remain. */
+export function speakableDevanagari(text: string): boolean {
+  return /[\u0900-\u097F]/.test(text) && !/[\u0600-\u06FF\u0750-\u077F\uFB50-\uFDFF\uFE70-\uFEFF]/.test(text);
+}
 
 export function buildTranslateSystem(from: Lang, to: TranslateTarget): string {
   const toName = to === "hi" ? SPEECH_HI_NAME : LANGUAGE_NAME[to];

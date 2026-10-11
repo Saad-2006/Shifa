@@ -118,6 +118,12 @@ const PHRASES: Record<EmergencyCategory, string[]> = {
     "snake bite", "snakebite", "bitten by a snake", "severe burn", "severe burns", "badly burned",
     "electric shock", "saanp ne kaata", "saanp ka kaata", "buri tarah jal", "current lag gaya",
     "سانپ نے کاٹا", "سانپ نے کاٹ لیا", "بری طرح جل",
+    // Saying it's an emergency (statements, not questions like "is it an emergency?").
+    "i have an emergency", "we have an emergency", "this is an emergency", "its an emergency",
+    "it is an emergency", "having a medical emergency", "need an ambulance", "call an ambulance",
+    "send an ambulance", "need urgent help", "emergency ho gayi", "emergency ki halat",
+    "ambulance bulao", "ambulance bulayein", "ambulance chahiye", "fori madad chahiye",
+    "ایمرجنسی ہو گئی", "ایمبولینس بلائیں", "ایمبولینس چاہیے", "فوری مدد چاہیے",
   ],
 };
 

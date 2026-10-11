@@ -72,6 +72,16 @@ const POSITIVES: [string, EmergencyCategory][] = [
   ["سينے ميں درد", "cardiac"], // Arabic yeh (ي) instead of Urdu yeh
 ];
 
+// Plain "it's an emergency" statements (Talha typed "i have an emergency" and got no WhatsApp button).
+const STATEMENTS: string[] = [
+  "i have an emergency",
+  "It's an emergency, please help",
+  "we need an ambulance",
+  "Abbu ki emergency ho gayi hai",
+  "ambulance bulao jaldi",
+  "ایمبولینس بلائیں",
+];
+
 const NEGATIVES = [
   "Hb kam hai kya ye serious hai",
   "sugar zyada hai kya karun",
@@ -109,6 +119,8 @@ const NEGATIVES = [
   "saans phoolti hai seerhiyan chadhte hue",
   "Is this serious?",
   "Kya ye serious hai?",
+  "is this an emergency?",
+  "what counts as a medical emergency?",
   "",
 ];
 
@@ -185,6 +197,10 @@ for (const [text, category] of POSITIVES) {
     assert.equal(r.category, category, `category ${r.category}`);
     assert.ok(r.matched.length > 0, "no matched phrase");
   });
+}
+
+for (const text of STATEMENTS) {
+  await test(`emergency statement: ${text}`, () => assert.equal(detectEmergency(text).isEmergency, true, "not detected"));
 }
 
 for (const text of NEGATIVES) {

@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import { CartesianGrid, Line, LineChart, ReferenceArea, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { TrendingDown, TrendingUp, Minus } from "lucide-react";
+import { CircleArrowDown, CircleArrowUp, CircleCheck, CircleMinus } from "lucide-react";
 import { formatDate, formatMonthShort, t, urduFont } from "@/lib/i18n";
 import { useResolvedTheme } from "@/lib/theme";
 import type { Lang, TestStatus, Trend } from "@/lib/types";
@@ -62,11 +62,20 @@ export default function TrendChart({ trend, lang }: { trend: Trend; lang: Lang }
     const clean = (n: number) => Number(n.toFixed(6));
     const niceLo = clean(Math.max(0, Math.floor((lo - range * 0.1) / step) * step));
     const niceHi = clean(Math.ceil((hi + range * 0.1) / step) * step);
-    const mid = clean(Math.round((niceLo + niceHi) / 2 / step) * step);
-    return [niceLo, niceHi, [niceLo, mid, niceHi]];
+    // Label the normal range's limits (the green band's edges); otherwise a round middle tick.
+    // Skip a label that would sit on top of another one.
+    const limits = [refLow, refHigh].filter((x): x is number => x !== null && x > niceLo && x < niceHi);
+    const inner = limits.length ? limits : [clean(Math.round((niceLo + niceHi) / 2 / step) * step)];
+    const gap = (niceHi - niceLo) * 0.12;
+    const ticks = [niceLo];
+    for (const x of [...inner, niceHi]) if (x - ticks[ticks.length - 1] >= gap || x === niceHi) ticks.push(x);
+    if (ticks.length > 2 && niceHi - ticks[ticks.length - 2] < gap) ticks.splice(ticks.length - 2, 1);
+    return [niceLo, niceHi, ticks];
   }, [trend.points, refLow, refHigh]);
 
-  const DirIcon = trend.direction === "up" ? TrendingUp : trend.direction === "down" ? TrendingDown : Minus;
+  // The badge shows the latest status ("✓ Normal"); the direction is in the sentence below it.
+  const StatusIcon =
+    trend.latestStatus === "normal" ? CircleCheck : trend.latestStatus === "high" ? CircleArrowUp : trend.latestStatus === "low" ? CircleArrowDown : CircleMinus;
   const tone = statusTone(trend.latestStatus);
   const animate = !prefersReducedMotion();
 
@@ -78,12 +87,13 @@ export default function TrendChart({ trend, lang }: { trend: Trend; lang: Lang }
           <span
             className={`inline-flex shrink-0 items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium ${TONE_CLASSES[tone]}`}
           >
-            <DirIcon size={13} aria-hidden />
+            <StatusIcon size={13} aria-hidden />
             <span className={urduFont(lang)}>{statusWord(trend.latestStatus, lang)}</span>
           </span>
         </div>
         <p className="mt-1 text-sm leading-snug text-muted">{trend.summary}</p>
       </figcaption>
+      {trend.unit && <p className="mt-2 -mb-1 text-[11px] text-muted">{trend.unit}</p>}
       {/* 2:1, so a wider sidebar gives a bigger chart (140–280px tall). */}
       <div className="mt-2 aspect-[2/1] max-h-[280px] min-h-[140px] w-full" role="img" aria-label={trend.summary}>
         <ResponsiveContainer width="100%" height="100%">

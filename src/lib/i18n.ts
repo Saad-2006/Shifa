@@ -248,6 +248,8 @@ const dict = {
   // Value status
   statusLow: { en: "Low", ur: "کم", roman: "Kam" },
   statusHigh: { en: "High", ur: "زیادہ", roman: "Zyada" },
+  statusSlightlyLow: { en: "Slightly low", ur: "تھوڑا کم", roman: "Thora kam" },
+  statusSlightlyHigh: { en: "Slightly high", ur: "تھوڑا زیادہ", roman: "Thora zyada" },
   statusNormal: { en: "Normal", ur: "نارمل", roman: "Normal" },
   statusAbnormal: { en: "Abnormal", ur: "غیر معمولی", roman: "Ghair mamooli" },
   statusUnknown: { en: "Not checked", ur: "چیک نہیں ہوا", roman: "Check nahi hua" },
@@ -297,7 +299,14 @@ const dict = {
   // Backup / Restore
   yourData: { en: "Your data", ur: "آپ کا ڈیٹا", roman: "Aap ka data" },
   backup: { en: "Back up to a file", ur: "فائل میں بیک اپ کریں", roman: "File mein backup karein" },
-  restore: { en: "Restore from a backup file", ur: "بیک اپ فائل سے واپس لائیں", roman: "Backup file se wapas layein" },
+  restoreShort: { en: "Restore a backup", ur: "بیک اپ واپس لائیں", roman: "Backup wapas layein" },
+  restoreWhat: { en: "Family, reports & chats", ur: "فیملی، رپورٹس اور چیٹس", roman: "Family, reports aur chats" },
+  loadDemoHint: { en: "Try Shifa with a sample family", ur: "نمونے کی فیملی کے ساتھ آزمائیں", roman: "Sample family ke saath try karein" },
+  restore: {
+    en: "Restore a backup (family, reports, chats)",
+    ur: "بیک اپ واپس لائیں (فیملی، رپورٹس، چیٹس)",
+    roman: "Backup wapas layein (family, reports, chats)",
+  },
   backupHint: {
     en: "Reports are saved only on this phone. Back up now and then (and before changing phones). The file has health information, so keep it private.",
     ur: "رپورٹس صرف اسی فون پر محفوظ ہیں۔ وقتاً فوقتاً (اور فون بدلنے سے پہلے) بیک اپ کریں۔ فائل میں صحت کی معلومات ہیں، اسے کسی سے شیئر نہ کریں۔",
@@ -491,9 +500,9 @@ const dict = {
   call1122: { en: "Call 1122", ur: "1122 پر کال کریں", roman: "1122 par call karein" },
   alertContacts: { en: "Family alert numbers", ur: "فیملی الرٹ نمبر", roman: "Family alert numbers" },
   alertContactsHint: {
-    en: "In an emergency, Shifa opens WhatsApp with a ready alert to these numbers; you tap Send. Saved only on this phone.",
-    ur: "ایمرجنسی میں شفا ان نمبروں کے لیے تیار الرٹ کے ساتھ واٹس ایپ کھولتا ہے؛ بھیجنا آپ دبائیں۔ صرف اسی فون پر محفوظ۔",
-    roman: "Emergency mein Shifa in numbers ke liye tayyar alert ke saath WhatsApp kholta hai; Send aap dabayein. Sirf isi phone par save.",
+    en: "When Shifa spots an emergency (danger values in a report, or words like chest pain, fainting or \"emergency\"), it shows a button that opens WhatsApp with a ready message to these numbers. You tap Send. Saved only on this phone.",
+    ur: "جب شفا کو ایمرجنسی نظر آئے (رپورٹ میں خطرناک ویلیوز، یا سینے میں درد، بے ہوشی یا \"ایمرجنسی\" جیسے الفاظ)، تو ایک بٹن آتا ہے جو ان نمبروں کے لیے تیار پیغام کے ساتھ واٹس ایپ کھولتا ہے۔ بھیجنا آپ دبائیں۔ صرف اسی فون پر محفوظ۔",
+    roman: "Jab Shifa ko emergency nazar aaye (report mein khatarnak values, ya seenay mein dard, behoshi ya \"emergency\" jaise alfaaz), to aik button aata hai jo in numbers ke liye tayyar message ke saath WhatsApp kholta hai. Send aap dabayein. Sirf isi phone par save.",
   },
   contactName: { en: "Name", ur: "نام", roman: "Naam" },
   contactNamePlaceholder: { en: "e.g. Bhai", ur: "مثلاً بھائی", roman: "Maslan Bhai" },
