@@ -3,7 +3,7 @@
 **Category:** AI in Healthcare
 **Team:** Saad Mehmood · Talha Hamid · Eman Fatima · FAST-NUCES Lahore, 5th semester
 **Keywords:** Medical Document AI · Urdu NLP · Lab Report Interpretation · Patient Safety · Health Literacy
-**Prototype:** [GitHub repo](https://github.com/Saad-2006/Shifa) · [Live demo](https://shifa-silk.vercel.app) · [2-minute video](⟨add video link⟩)
+**Prototype:** [GitHub repo](https://github.com/Saad-2006/Shifa) · [Live demo](https://shifa-silk.vercel.app) · [90-second demo video](https://drive.google.com/file/d/1IRDkABoYs7Mnkvak60C10erqBNExcEZu/view?usp=drive_link)
 
 ---
 
