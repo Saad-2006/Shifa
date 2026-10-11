@@ -9,7 +9,8 @@ import assert from "node:assert/strict";
 import type { Person, ExtractedTest, ExtractedReport } from "@/lib/types";
 import { canonicalKey, checkTest, checkReport, parseNumber, parseRange, URGENCY_RANK } from "@/lib/labRules";
 import { buildTrends } from "@/lib/trends";
-import { SAMPLE_EXTRACTION, buildDemoFamily } from "@/lib/demoData";
+import { DEMO_ANSWER, SAMPLE_EXTRACTION, buildDemoFamily } from "@/lib/demoData";
+import { buildDoctorQuestions } from "@/components/doctorQuestions";
 
 let passed = 0;
 const failures: string[] = [];
@@ -229,6 +230,27 @@ ok("Ammi HbA1c trend exists", !!a1cTrend);
 eq("Ammi HbA1c rising", a1cTrend?.direction, "up");
 eq("Ammi HbA1c points", a1cTrend?.points.map((p) => p.value), [6.1, 7.4]);
 eq("Ammi HbA1c summary", a1cTrend?.summary, "HbA1c rose from 6.1 % (Mar 2026) to 7.4 % (Oct 2026)");
+// The demo answer follows the preferred language (it used to be stuck in Roman Urdu).
+ok("demo answer: same numbers in all 3 languages", numbersPreserved(DEMO_ANSWER.en, DEMO_ANSWER.ur) && numbersPreserved(DEMO_ANSWER.en, DEMO_ANSWER.roman));
+const famEn = buildDemoFamily(new Date("2026-10-10T08:00:00.000Z"), "en");
+eq("demo answer in English when English is preferred", [famEn.messages[0].lang, famEn.messages[0].text], ["en", DEMO_ANSWER.en]);
+eq("demo answer: other two saved as ready translations", Object.keys(famEn.messages[0].translations ?? {}).sort(), ["roman", "ur"]);
+eq("demo answer in Urdu when Urdu is preferred", buildDemoFamily(new Date(), "ur").messages[0].text, DEMO_ANSWER.ur);
+
+// Doctor Summary questions: preferred language, same numbers as the English line under them.
+{
+  const ammi = fam.people.find((p) => p.name === "Ammi")!;
+  const latest = fam.reports.find((r) => r.id === fam.messages[0].reportId);
+  const qEn = buildDoctorQuestions(ammi, latest, ammiTrends, "en");
+  const qUr = buildDoctorQuestions(ammi, latest, ammiTrends, "ur");
+  const qRo = buildDoctorQuestions(ammi, latest, ammiTrends, "roman");
+  ok("doctor questions built", qEn.length >= 4);
+  eq("doctor questions: same count in every language", [qUr.length, qRo.length], [qEn.length, qEn.length]);
+  ok("doctor questions in Urdu script", qUr.every((q) => /[\u0600-\u06FF]/.test(q)));
+  ok("doctor questions keep every number in Urdu and Roman", qEn.every((q, i) => numbersPreserved(q, qUr[i]) && numbersPreserved(q, qRo[i])));
+  ok("doctor questions name the person", qEn.some((q) => q.includes("for Ammi")) && qRo.some((q) => q.includes("Ammi ke liye")));
+}
+
 ok("trends latest-abnormal first", ammiTrends.findIndex((t) => t.latestStatus === "normal") > ammiTrends.findIndex((t) => t.key === "hba1c"));
 eq("Abbu has no trends (1 report)", buildTrends(fam.reports, "demo-abbu").length, 0);
 eq("trend flat", buildTrends([
@@ -421,9 +443,12 @@ async function storeTests(): Promise<void> {
   for (let i = 0; i < 210; i++) shifa.addMessage({ personId: p.id, role: "assistant", text: "x" + i });
   eq("history capped at 200 per person", shifa.getState().messages.filter((x) => x.personId === p.id).length, 200);
   ok("persisted to shifa:v1", (mem.get("shifa:v1") ?? "").includes("Nani"));
+  shifa.setLang("en");
   shifa.loadDemoFamily();
   shifa.loadDemoFamily();
   const s = shifa.getState();
+  eq("demo answer follows the preferred language", s.messages.find((x) => x.id === "demo-msg-ammi-1")?.lang, "en");
+  shifa.setLang("roman"); // back to the default for the reset checks below
   eq("demo loaded once (no duplicates)", s.people.filter((x) => x.id.startsWith("demo-")).length, 3);
   eq("demo reports once", s.reports.filter((r) => r.source === "demo").length, 3);
   eq("demo Ammi active", s.people.find((x) => x.id === s.activePersonId)?.name, "Ammi");

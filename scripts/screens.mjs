@@ -205,7 +205,7 @@ const browser = await chromium.launch({ executablePath: CHROME, headless: true }
 // ---------- Mobile: dark mode + WhatsApp alert ----------
 {
   const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 3, isMobile: true, hasTouch: true });
-  const page = await ctx.newPage();
+  let page = await ctx.newPage();
   watch(page, "dark");
   await page.addInitScript(() => localStorage.setItem("shifa:theme", "dark"));
   await page.goto(BASE, { waitUntil: "domcontentloaded" });
@@ -215,6 +215,10 @@ const browser = await chromium.launch({ executablePath: CHROME, headless: true }
   await page.getByRole("radio", { name: "English" }).first().click();
   await page.getByRole("button", { name: /Load demo family/i }).first().click();
   await page.waitForTimeout(500);
+  // Demo family loaded in English must answer in English (it used to be stuck in Roman Urdu).
+  const demoEn = await page.getByText(/In Ammi's October report/).count();
+  console.log("demo answer follows English:", demoEn > 0);
+  if (!demoEn) problems.push("[language] demo family answer is not in English when English is preferred");
   await page.getByText(/Checked by Shifa rules/i).first().evaluate((el) => el.scrollIntoView({ block: "end" }));
   await page.waitForTimeout(400);
   await page.screenshot({ path: `${OUT}/dark-report-card.png` });
@@ -240,6 +244,12 @@ const browser = await chromium.launch({ executablePath: CHROME, headless: true }
   await page.screenshot({ path: `${OUT}/dark-emergency-whatsapp.png` });
 
   // Danger value on a report: calm "checked today / ER" card with WhatsApp, and no 1122 at all.
+  // Seed it from a fresh tab, so the old tab can't save its own state over the seeded data.
+  await page.close();
+  page = await ctx.newPage();
+  watch(page, "dark-danger");
+  await page.goto(BASE, { waitUntil: "networkidle" });
+  await page.waitForTimeout(500);
   await page.evaluate(() => {
     const s = JSON.parse(localStorage.getItem("shifa:v1"));
     const now = new Date().toISOString();
@@ -263,6 +273,28 @@ const browser = await chromium.launch({ executablePath: CHROME, headless: true }
   console.log("danger report: calm card with WhatsApp, no 1122:", reportOk);
   if (!reportOk) problems.push(`[urgent] danger report card wrong (whatsapp ${reportWa}, calls ${reportCalls})`);
   await dangerCard.screenshot({ path: `${OUT}/dark-danger-report.png` });
+  await ctx.close();
+}
+
+// ---------- Urdu: demo answer and Doctor Summary questions follow the preferred language ----------
+{
+  const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 }, deviceScaleFactor: 2 });
+  const page = await ctx.newPage();
+  watch(page, "urdu-summary");
+  await page.goto(BASE, { waitUntil: "networkidle" });
+  await page.getByRole("radio", { name: "اردو (Urdu)" }).first().click();
+  await page.getByRole("button", { name: /demo|ڈیمو/i }).first().click();
+  await page.waitForTimeout(600);
+  const demoUr = await page.getByText(/امی کی اکتوبر کی رپورٹ/).count();
+  console.log("demo answer follows Urdu:", demoUr > 0);
+  if (!demoUr) problems.push("[language] demo family answer is not in Urdu when Urdu is preferred");
+  await page.goto(`${BASE}/summary?person=demo-ammi`, { waitUntil: "networkidle" });
+  await page.waitForTimeout(500);
+  const urTitle = await page.getByText("ڈاکٹر سے پوچھنے کے سوالات").count();
+  const enLine = await page.getByText(/What does this mean for Ammi/).count();
+  console.log("summary questions in Urdu with English underneath:", urTitle > 0 && enLine > 0);
+  if (!(urTitle > 0 && enLine > 0)) problems.push("[language] Doctor Summary questions are not in Urdu + English");
+  await page.screenshot({ path: `${OUT}/summary-urdu.png`, fullPage: true });
   await ctx.close();
 }
 

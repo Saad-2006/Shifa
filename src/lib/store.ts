@@ -363,7 +363,7 @@ export const shifa = {
 
   loadDemoFamily: (): void => {
     const s = current();
-    const demo = buildDemoFamily(new Date());
+    const demo = buildDemoFamily(new Date(), s.lang); // the demo answer follows the preferred language
     const people = s.people.filter((p) => !isDemoId(p.id));
     const reports = s.reports.filter((r) => r.source !== "demo" && !isDemoId(r.personId) && !isDemoId(r.id));
     const messages = s.messages.filter((m) => !isDemoId(m.personId) && !isDemoId(m.id));
