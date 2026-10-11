@@ -125,7 +125,7 @@ export default function Composer({
 
   return (
     <div
-      className={`rounded-[20px] border bg-bg p-1.5 focus-within:border-ink/30 ${dragging ? "border-accent bg-surface" : ""}`}
+      className={`rounded-[20px] border bg-bg p-1.5 focus-within:border-ink/30 ${dragging ? "border-ink/40 bg-surface" : ""}`}
       onDragOver={(e) => {
         if (!e.dataTransfer.types.includes("Files")) return;
         e.preventDefault();
@@ -254,7 +254,7 @@ export default function Composer({
           disabled={!canSend}
           aria-label={t("send", lang)}
           title={t("send", lang)}
-          className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-accent text-white transition-colors hover:bg-accent-hover disabled:bg-border disabled:text-muted"
+          className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-ink text-on-ink transition-colors hover:bg-ink/90 disabled:bg-border disabled:text-muted"
         >
           <ArrowUp size={22} aria-hidden strokeWidth={2.5} />
         </button>

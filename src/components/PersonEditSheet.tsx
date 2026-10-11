@@ -79,7 +79,7 @@ export default function PersonEditSheet({
 
   const chip = (active: boolean) =>
     `min-h-10 rounded-full border px-3 text-sm transition-colors ${active ? "border-ink bg-ink text-on-ink" : "bg-bg hover:bg-surface"}`;
-  const input = "h-11 w-full rounded-input border bg-bg px-3 text-[15px] outline-none focus:border-accent";
+  const input = "h-11 w-full rounded-input border bg-bg px-3 text-[15px] outline-none focus:border-ink/50";
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-6">
@@ -192,7 +192,7 @@ export default function PersonEditSheet({
             )}
           </div>
 
-          <button type="submit" className={`min-h-12 w-full rounded-input bg-accent px-4 font-semibold text-white hover:bg-accent-hover ${ur}`}>
+          <button type="submit" className={`min-h-12 w-full rounded-input bg-ink px-4 font-semibold text-on-ink hover:bg-ink/90 ${ur}`}>
             {t("saveChanges", lang)}
           </button>
 

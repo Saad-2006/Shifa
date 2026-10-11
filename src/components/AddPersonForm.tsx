@@ -93,7 +93,7 @@ export default function AddPersonForm({
         <button
           type="submit"
           disabled={!valid}
-          className="inline-flex min-h-11 flex-1 items-center justify-center rounded-input bg-accent px-4 text-sm font-semibold text-white hover:bg-accent-hover disabled:bg-border disabled:text-muted"
+          className="inline-flex min-h-11 flex-1 items-center justify-center rounded-input bg-ink px-4 text-sm font-semibold text-on-ink hover:bg-ink/90 disabled:bg-border disabled:text-muted"
         >
           <span className={urduFont(lang)}>{t("save", lang)}</span>
         </button>
