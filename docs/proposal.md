@@ -1,9 +1,9 @@
 # Shifa: Your Family's Lab Reports, Explained in Your Language
 
 **Category:** AI in Healthcare
-**Team:** TODO: full names of all 3 members, university, semester
+**Team:** Saad Mehmood · Talha Hamid · Eman Fatima · FAST-NUCES Lahore, 5th semester
 **Keywords:** Medical Document AI · Urdu NLP · Lab Report Interpretation · Patient Safety · Health Literacy
-**Prototype:** [GitHub repo](TODO-link) · [Live demo](https://shifa-silk.vercel.app) · [2-minute video](TODO-link)
+**Prototype:** [GitHub repo](https://github.com/Saad-2006/Shifa) · [Live demo](https://shifa-silk.vercel.app) · [2-minute video](⟨add video link⟩)
 
 ---
 
@@ -46,7 +46,7 @@ Generic chatbots are not the answer. They can misread numbers, invent values, or
 - Make doctor visits more productive with a structured summary and good questions.
 
 **Expected outcomes**
-- **Reading accuracy:** *[fill in from `npm run eval`, e.g. "X% of values read exactly right across N real reports from M labs"]*.
+- **Reading accuracy:** measured with our evaluation tool (`npm run eval`), which scores Shifa's reading value by value against hand-checked labels and groups the results by lab. Early check: **14 of 14 values read exactly right**, with every normal range and High/Low flag matching, in about 6 seconds per report. This covers one real Minhaj Lab report (including its "See below" HbA1c category table) and our printed sample report. We are extending it to more real reports from Chughtai, Minhaj and Shaukat Khanum before the finals.
 - **Safety:** 100% of danger values flagged by the rule engine. This is verified by automated tests.
 - Families understand their results without waiting for an appointment, and recognise emergencies sooner.
 
@@ -68,10 +68,12 @@ Generic chatbots are not the answer. They can misread numbers, invent values, or
 | Patient identity check | Reads the patient's name, age and sex from the report | Compares them with the chosen family member. On a mismatch, nothing is added until the user confirms whose report it is |
 | WhatsApp alert | – | For code-decided emergencies only (a danger value, or emergency words): one tap opens WhatsApp with a code-written alert to a saved family number |
 | Translate an answer (one tap) | Translates one of Shifa's answers into English / Urdu / Roman Urdu | Checks that every number survived unchanged (none lost or added); otherwise the translation is not shown. Saved, so showing it again costs nothing |
+| Read aloud and voice input | – | Every answer can be read aloud; on phones without an Urdu voice, Urdu answers are read by the Hindi voice (same spoken words), with numbers checked by code |
+| Ask with a report | Answers the question typed next to an attached or pasted report, inside the explanation | Keeps the report waiting until Send, so the question goes with it |
 | Dark mode | – | System / Light / Dark themes, readable in all three languages |
 | Trends across reports | – | Charts each test over time against its normal band |
 | Family profiles | – | Separate history per family member, stored only on the device |
-| Doctor Summary | – | Printable one-page summary with questions to ask |
+| Doctor Summary | Writes one "In simple words" paragraph for the family | Printable one-page summary for the doctor; questions to ask in the family's language with English underneath; every number in the AI paragraph must come from the report, or it isn't shown |
 | Accuracy evaluation | – | `npm run eval` scores the reading accuracy on hand-labelled real reports |
 
 **Next milestone (Phase 2): medicines**

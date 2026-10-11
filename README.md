@@ -7,7 +7,7 @@
 - **explains it in English, Urdu or Roman Urdu**, then answers your follow-up questions (set your preferred language once; any answer can be shown in another language with one tap, and code checks that no number changed in the translation)
 
 > Built for the AIEF 4th International AI Championship, category **AI in Healthcare**.
-> Live demo: https://shifa-silk.vercel.app · Video (2 min): TODO
+> Live demo: https://shifa-silk.vercel.app · Video (2 min): ⟨add video link⟩
 
 | Report card (checked by code) | Emergency detection | Urdu (mobile) |
 |---|---|---|
@@ -29,7 +29,7 @@
 
 The AI is told the flags were computed by code and must never override them.
 
-**Reading accuracy on real reports:** TODO, run `npm run eval` (see `eval/README.md`).
+**Reading accuracy:** `npm run eval` scores the reading value by value against hand-checked labels, per lab (see `eval/README.md`). Early check: 14 of 14 values read exactly right, with every range and High/Low flag matching (one real Minhaj Lab report with a "See below" HbA1c table, plus the printed sample report). It is being extended to more real Chughtai, Minhaj and Shaukat Khanum reports.
 
 ## Features
 - **Scan in chat:** camera or attach (photo or PDF).
@@ -118,4 +118,4 @@ emergency detector (client) ◀── text stream ──  emergency sentinel, of
 Shifa explains lab reports to help families understand them. It does not diagnose, prescribe, or replace a doctor. In an emergency, call **1122**.
 
 ## Team
-TODO: names, university.
+Saad Mehmood · Talha Hamid · Eman Fatima, FAST-NUCES Lahore, 5th semester.
