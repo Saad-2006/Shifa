@@ -50,6 +50,15 @@ const browser = await chromium.launch({ executablePath: CHROME, headless: true }
   const t = Date.now();
   await waitForChat(page, () => page.getByRole("button", { name: /Try a sample report/i }).first().click());
   console.log(`sample flow (extract + check + explain): ${Date.now() - t}ms`);
+  // "Basic answer" only when the answer itself came from the built-in rules (not because the
+  // sample used its built-in data).
+  const sampleMsg = await page.evaluate(() => {
+    const s = JSON.parse(localStorage.getItem("shifa:v1") ?? "{}");
+    return (s.messages ?? []).filter((m) => m.role === "assistant" && m.reportId).at(-1) ?? {};
+  });
+  const builtIn = /Basic answer|Basic jawab|سادہ جواب/.test(sampleMsg.text ?? "");
+  console.log("sample answer badge matches its source:", Boolean(sampleMsg.offline) === builtIn);
+  if (Boolean(sampleMsg.offline) !== builtIn) problems.push(`[badge] sample marked offline=${Boolean(sampleMsg.offline)} but built-in answer=${builtIn}`);
   await page.screenshot({ path: `${OUT}/chat.png` });
   // The hero: the code-built report card, scrolled into view.
   await page.getByText(/Checked by Shifa rules/i).first().evaluate((el) => el.scrollIntoView({ block: "end" }));
@@ -78,7 +87,8 @@ const browser = await chromium.launch({ executablePath: CHROME, headless: true }
   console.log("urgent card: WhatsApp first + single 1122 button:", urgentOk, calls);
   if (!urgentOk) problems.push(`[urgent] typed emergency card wrong (card ${card}, whatsapp ${wa}, calls ${calls.join(",")})`);
   // (Next.js keeps an empty role="alert" route announcer on every page, so only count alerts with text.)
-  if (await page.getByRole("alert").filter({ hasText: /\S/ }).count()) problems.push("[urgent] a popup/alert banner is still shown");
+  const alerts = await page.getByRole("alert").filter({ hasText: /\S/ }).allInnerTexts();
+  if (alerts.length) problems.push(`[urgent] a popup/alert banner is still shown: ${alerts.join(" | ").slice(0, 120)}`);
   await page.getByText(/This could be serious/i).first().evaluate((el) => el.scrollIntoView({ block: "center" }));
   await page.waitForTimeout(300);
   await page.screenshot({ path: `${OUT}/emergency.png` });
@@ -273,6 +283,59 @@ const browser = await chromium.launch({ executablePath: CHROME, headless: true }
   console.log("danger report: calm card with WhatsApp, no 1122:", reportOk);
   if (!reportOk) problems.push(`[urgent] danger report card wrong (whatsapp ${reportWa}, calls ${reportCalls})`);
   await dangerCard.screenshot({ path: `${OUT}/dark-danger-report.png` });
+  await ctx.close();
+}
+
+// ---------- iPhone-like voices (English + Hindi, no Urdu): Urdu Listen uses the Hindi voice ----------
+{
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 3, isMobile: true, hasTouch: true });
+  await ctx.addInitScript(() => {
+    const voices = [
+      { lang: "en-US", name: "Samantha", default: true, localService: true, voiceURI: "Samantha" },
+      { lang: "hi-IN", name: "Lekha", default: false, localService: true, voiceURI: "Lekha" },
+    ];
+    window.__said = [];
+    const fake = {
+      getVoices: () => voices,
+      speak: (u) => {
+        window.__said.push({ text: u.text, lang: u.lang });
+        setTimeout(() => u.onend && u.onend(), 50);
+      },
+      cancel: () => {},
+      pause: () => {},
+      resume: () => {},
+      speaking: false,
+      addEventListener() {},
+      removeEventListener() {},
+    };
+    Object.defineProperty(window, "speechSynthesis", { value: fake, configurable: true });
+    // Real utterances only accept real voices, so the fake voices need a fake utterance too.
+    window.SpeechSynthesisUtterance = class {
+      constructor(text) {
+        this.text = text;
+        this.lang = "";
+        this.voice = null;
+      }
+    };
+  });
+  const page = await ctx.newPage();
+  watch(page, "voice");
+  await page.goto(BASE, { waitUntil: "networkidle" });
+  await page.getByRole("radio", { name: "اردو (Urdu)" }).first().click();
+  await page.getByRole("button", { name: /ڈیمو/ }).first().click();
+  await page.waitForTimeout(600);
+  const listen = page.getByRole("button", { name: /سنیں/ }).first();
+  const listenShown = await listen.isVisible().catch(() => false);
+  console.log("Urdu Listen button shown without an Urdu voice:", listenShown);
+  if (!listenShown) problems.push("[voice] Listen button hidden in Urdu on a device without an Urdu voice");
+  if (listenShown) {
+    await listen.click();
+    await page.waitForFunction(() => window.__said.some((u) => u.lang === "hi-IN" && /[\u0900-\u097F]/.test(u.text)), null, { timeout: 120_000 }).catch(() => {});
+    const said = await page.evaluate(() => window.__said);
+    const hindiOk = said.some((u) => u.lang === "hi-IN" && /[\u0900-\u097F]/.test(u.text));
+    console.log("Urdu answer read in Devanagari with the Hindi voice:", hindiOk, (said.find((u) => u.lang === "hi-IN")?.text ?? "").slice(0, 60));
+    if (!hindiOk) problems.push("[voice] Urdu answer was not read with the Hindi voice");
+  }
   await ctx.close();
 }
 

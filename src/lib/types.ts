@@ -48,7 +48,6 @@ export interface PendingIdentity {
   suggestedPersonId?: string;
   extracted?: ExtractedReport;
   source?: "scan" | "sample" | "demo";
-  offline?: boolean;
   userMessageId?: string;
 }
 
@@ -118,11 +117,13 @@ export interface ChatMessage {
   reportId?: string; // assistant message that shows a report card
   attachmentName?: string; // user message that attached a file
   emergency?: boolean; // code flagged an emergency for this turn (calm urgent card)
-  offline?: boolean; // answer came from the offline fallback, not Gemini
+  offline?: boolean; // the answer itself came from Shifa's built-in rules, not the live AI
   lang?: Lang;
   pendingIdentity?: PendingIdentity; // "is this report for Ammi?" waiting for the user
   /** On-demand translations of `text`, for display only (chat history always sends the original). */
   translations?: Partial<Record<Lang, string>>;
+  /** The answer in Devanagari letters, only for reading Urdu aloud with a Hindi voice (no Urdu voice on the device). */
+  speechHi?: string;
 }
 
 export interface TrendPoint {

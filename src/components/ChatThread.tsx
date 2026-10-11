@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
-import { FileText, HeartPulse, Languages, Paperclip, Square, Volume2, WifiOff } from "lucide-react";
+import { FileText, HeartPulse, Info, Languages, Paperclip, Square, Volume2 } from "lucide-react";
 import { detectEmergency } from "@/lib/emergency";
 import { LANG_SELF_NAME, t, urduFont } from "@/lib/i18n";
-import { canSpeak, onVoicesChanged, speak, stopSpeaking } from "@/lib/speech";
+import { canSpeak, onVoicesChanged, primeSpeech, readAloudPlan, speak, stopSpeaking, type VoiceLang } from "@/lib/speech";
 import type { AlertContact, ChatMessage, LabReport, Lang, Person } from "@/lib/types";
 import IdentityCheckCard from "./IdentityCheckCard";
 import Markdown from "./Markdown";
@@ -90,7 +90,7 @@ export default function ChatThread({
   const [speakingId, setSpeakingId] = useState<string | null>(null);
   const [, setVoiceTick] = useState(0);
 
-  // Voices load asynchronously; re-render so canSpeak("ur") can become true.
+  // Voices load asynchronously; re-render so the read-aloud plan sees an Urdu or Hindi voice.
   useEffect(() => {
     const off = onVoicesChanged(() => setVoiceTick((n) => n + 1));
     return () => {
@@ -117,13 +117,38 @@ export default function ChatThread({
     stickRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 160;
   };
 
-  const toggleSpeak = (id: string, text: string, textLang: Lang) => {
+  // Listen. With no Urdu voice on the device, an Urdu answer is read in Devanagari by a Hindi voice
+  // (sounds like spoken Urdu), or as Roman Urdu; prepared once on the first tap, then saved.
+  const [preparingId, setPreparingId] = useState<string | null>(null);
+  const [voiceFailedId, setVoiceFailedId] = useState<string | null>(null);
+  const [basicInfoId, setBasicInfoId] = useState<string | null>(null); // "Basic answer" explained on tap
+  const toggleSpeak = async (m: ChatMessage, text: string, textLang: Lang) => {
+    const id = m.id;
     if (speakingId === id) {
       stopSpeaking();
       setSpeakingId(null);
       return;
     }
-    const ok = speak(text, textLang, () => setSpeakingId((cur) => (cur === id ? null : cur)));
+    setVoiceFailedId(null);
+    const plan = readAloudPlan(textLang);
+    if (!plan) return;
+    let sayText: string | null = text;
+    let sayLang: VoiceLang = textLang;
+    if (plan !== "direct") {
+      sayLang = plan;
+      sayText = plan === "hi" ? (m.speechHi ?? null) : (m.lang === "roman" ? m.text : (m.translations?.roman ?? null));
+      if (!sayText) {
+        primeSpeech(); // inside the tap, before waiting: iPhones only start speech from a tap
+        setPreparingId(id);
+        sayText = await translateMessage(id, plan);
+        setPreparingId(null);
+        if (!sayText) {
+          setVoiceFailedId(id);
+          return;
+        }
+      }
+    }
+    const ok = speak(sayText, sayLang, () => setSpeakingId((cur) => (cur === id ? null : cur)));
     setSpeakingId(ok ? id : null);
   };
 
@@ -139,7 +164,7 @@ export default function ChatThread({
     }
     if (to !== original && !m.translations?.[to]) {
       setTranslatingId(m.id);
-      const ok = await translateMessage(m.id, to);
+      const ok = (await translateMessage(m.id, to)) !== null;
       setTranslatingId(null);
       if (!ok) {
         setFailedId(m.id);
@@ -254,23 +279,27 @@ export default function ChatThread({
                     {canSpeak(shownLang) && (
                       <button
                         type="button"
-                        onClick={() => toggleSpeak(m.id, shownText, shownLang)}
+                        onClick={() => void toggleSpeak(m, shownText, shownLang)}
+                        disabled={preparingId !== null}
                         aria-pressed={speakingId === m.id}
                         className="-ms-2 inline-flex min-h-11 items-center gap-1.5 rounded-full px-3 text-sm text-muted hover:bg-surface hover:text-ink"
                       >
                         {speakingId === m.id ? <Square size={15} aria-hidden /> : <Volume2 size={17} aria-hidden />}
-                        <span className={urduFont(lang)}>{speakingId === m.id ? t("stop", lang) : t("listen", lang)}</span>
+                        <span className={urduFont(lang)}>
+                          {preparingId === m.id ? t("preparingVoice", lang) : speakingId === m.id ? t("stop", lang) : t("listen", lang)}
+                        </span>
                       </button>
                     )}
                     {m.offline && (
-                      <span
-                        title={t("offlineHint", lang)}
-                        className="inline-flex items-center gap-1 rounded-full border bg-surface px-2 py-0.5 text-xs text-muted"
+                      <button
+                        type="button"
+                        onClick={() => setBasicInfoId((cur) => (cur === m.id ? null : m.id))}
+                        aria-expanded={basicInfoId === m.id}
+                        className="inline-flex min-h-9 items-center gap-1 rounded-full border bg-surface px-2.5 text-xs text-muted hover:text-ink"
                       >
-                        <WifiOff size={12} aria-hidden />
+                        <Info size={13} aria-hidden />
                         <span className={urduFont(lang)}>{t("offline", lang)}</span>
-                        <span className="sr-only">: {t("offlineHint", lang)}</span>
-                      </span>
+                      </button>
                     )}
                     <span className="inline-flex flex-wrap items-center gap-0.5 text-sm text-muted">
                       <span className={`px-1 ${urduFont(lang)}`}>{t("showIn", lang)}</span>
@@ -296,6 +325,10 @@ export default function ChatThread({
                 )}
 
                 {failedId === m.id && <p className={`text-sm text-bad ${urduFont(lang)}`}>{t("translateFailed", lang)}</p>}
+                {basicInfoId === m.id && m.offline && (
+                  <p className={`rounded-input bg-surface px-3 py-2 text-sm text-muted ${urduFont(lang)}`}>{t("offlineHint", lang)}</p>
+                )}
+                {voiceFailedId === m.id && <p className={`text-sm text-bad ${urduFont(lang)}`}>{t("voiceFailed", lang)}</p>}
               </div>
             </div>
           );

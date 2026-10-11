@@ -6,6 +6,7 @@
 
 import { useRef, useState } from "react";
 import { apiFetch } from "@/lib/apiClient";
+import type { TranslateTarget } from "@/lib/translate";
 import { SAMPLE_EXTRACTION } from "@/lib/demoData";
 import { detectEmergency, EMERGENCY_SENTINEL } from "@/lib/emergency";
 import { blobToBase64, fileToPayload, UploadError, type UploadPayload } from "@/lib/image";
@@ -20,7 +21,6 @@ import type {
   ExtractRequest,
   ExtractResponse,
   LabReport,
-  Lang,
   PatientOnReport,
   Person,
 } from "@/lib/types";
@@ -139,29 +139,35 @@ function personFromPatient(patient: PatientOnReport, reportDate: string, fallbac
 }
 
 /**
- * Translate one of Shifa's answers on tap (display only). Saved in the message, so showing it
- * again is free; the server rejects a translation that changes any number.
+ * Translate one of Shifa's answers on tap (display only), or write it in Devanagari ("hi") for a
+ * Hindi read-aloud voice. Saved in the message, so the next time is free; the server rejects a
+ * translation that changes any number. Returns the text, or null when it failed.
  */
-export async function translateMessage(messageId: string, to: Lang): Promise<boolean> {
+export async function translateMessage(messageId: string, to: TranslateTarget): Promise<string | null> {
   const m = shifa.getState().messages.find((x) => x.id === messageId);
-  if (!m || m.role !== "assistant" || !m.text.trim()) return false;
+  if (!m || m.role !== "assistant" || !m.text.trim()) return null;
   const from = m.lang ?? shifa.getState().lang;
-  if (from === to || m.translations?.[to]) return true;
+  if (from === to) return m.text;
+  const saved = to === "hi" ? m.speechHi : m.translations?.[to];
+  if (saved) return saved;
   try {
     const res = await apiFetch("/api/translate", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ text: m.text, from, to }),
     });
-    if (!res.ok) return false;
+    if (!res.ok) return null;
     const body = (await res.json()) as { text?: unknown };
-    if (typeof body.text !== "string" || !body.text.trim()) return false;
+    if (typeof body.text !== "string" || !body.text.trim()) return null;
     const fresh = shifa.getState().messages.find((x) => x.id === messageId);
-    if (!fresh || fresh.text !== m.text) return false; // the answer changed meanwhile
-    shifa.updateMessage(messageId, { translations: { ...fresh.translations, [to]: body.text } });
-    return true;
+    if (!fresh || fresh.text !== m.text) return null; // the answer changed meanwhile
+    shifa.updateMessage(
+      messageId,
+      to === "hi" ? { speechHi: body.text } : { translations: { ...fresh.translations, [to]: body.text } },
+    );
+    return body.text;
   } catch {
-    return false;
+    return null;
   }
 }
 
@@ -285,7 +291,6 @@ export function useShifaChat() {
 
       // 1. AI reads the report.
       let extracted: ExtractedReport | null = null;
-      let offline = false;
       let code: ErrCode | null = null;
       try {
         const payload = await getPayload();
@@ -304,7 +309,6 @@ export function useShifaChat() {
         if (res.ok) {
           const data = (await res.json()) as ExtractResponse;
           extracted = data.report;
-          offline = Boolean(data.offline);
         } else {
           code = await readErrorCode(res);
         }
@@ -312,10 +316,10 @@ export function useShifaChat() {
         code = e instanceof UploadError ? (e.code === "too_large" ? "too_large" : "bad_upload") : e instanceof FlowError ? e.code : "network";
       }
 
-      // Demo safety net: the sample always works, even with no server or key.
+      // Demo safety net: the sample always works, even with no server or key. (Its built-in data is
+      // exactly what the sample picture shows, so this alone doesn't make the answer "offline".)
       if (!extracted && opts.sample && code !== "unauthorized" && SAMPLE_EXTRACTION.tests.length > 0) {
         extracted = SAMPLE_EXTRACTION;
-        offline = true;
         code = null;
       }
       if (!extracted) return fail(extractErrorKey(code));
@@ -340,14 +344,13 @@ export function useShifaChat() {
               ...(verdict.suggestedPersonId ? { suggestedPersonId: verdict.suggestedPersonId } : {}),
               extracted,
               source,
-              offline,
               userMessageId: userMsg.id,
             },
           });
           return; // wait for the user's choice (resolveIdentity)
         }
       }
-      await completeScan(person.id, placeholder.id, extracted, source, offline, lang);
+      await completeScan(person.id, placeholder.id, extracted, source, lang);
     } catch (e) {
       console.error("[shifa] scan flow failed", e);
       if (placeholderId) shifa.updateMessage(placeholderId, { text: t("errOther", lang) });
@@ -362,7 +365,6 @@ export function useShifaChat() {
     messageId: string,
     extracted: ExtractedReport,
     source: LabReport["source"],
-    offline: boolean,
     lang: ReturnType<typeof shifa.getState>["lang"],
   ) => {
     learnPatient(personId, readPatient(extracted).shown, extracted.reportDate);
@@ -374,7 +376,6 @@ export function useShifaChat() {
     const isEmergency = report.urgency === "emergency";
     shifa.updateMessage(messageId, {
       reportId: report.id,
-      ...(offline ? { offline: true } : {}),
       ...(isEmergency ? { emergency: true } : {}),
     });
     setScan({ messageId, step: 2 });
@@ -437,7 +438,7 @@ export function useShifaChat() {
       shifa.setActivePerson(personId);
       shifa.updateMessage(messageId, { pendingIdentity: undefined });
       if (pend.mode === "confirm" && pend.extracted) {
-        await completeScan(personId, messageId, pend.extracted, pend.source ?? "scan", Boolean(pend.offline), lang);
+        await completeScan(personId, messageId, pend.extracted, pend.source ?? "scan", lang);
       } else if (pend.mode === "move" && msg.reportId) {
         shifa.moveReport(msg.reportId, personId);
         const report = shifa.getState().reports.find((r) => r.id === msg.reportId);

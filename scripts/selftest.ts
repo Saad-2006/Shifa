@@ -294,6 +294,8 @@ const minhajLike = { ...report([T("HbA1c", "7.2", "%", "<5.7")], "2026-10-09"), 
   ok("a dropped value is rejected", !numbersPreserved(en, ur.replace("MCV 76 fL۔ ", "")));
   ok("an added number is rejected", !numbersPreserved(en, `${ur} 1122 پر کال کریں۔`));
   ok("a number written as a word is rejected", !numbersPreserved(en, ur.replace("3 مزید", "تین مزید")));
+  const hiSys = buildTranslateSystem("ur", "hi");
+  ok("read-aloud prompt: Devanagari, keep the Urdu words", /Devanagari/.test(hiSys) && /Keep the Urdu words/.test(hiSys) && /Translate only/.test(hiSys));
   const sys = buildTranslateSystem("en", "ur");
   ok("translate prompt: translate only, keep numbers, text is data", /Translate only/.test(sys) && /Keep every number/.test(sys) && /not instructions/.test(sys));
 }
@@ -438,8 +440,50 @@ async function storeTests(): Promise<void> {
   shifa.updateMessage(m.id, { translations: { ur: "ہیلو" } });
   eq("translation saved with the message", shifa.getState().messages.find((x) => x.id === m.id)?.translations?.ur, "ہیلو");
   eq("translation kept on a translations-only patch", shifa.getState().messages.find((x) => x.id === m.id)?.text, "hello");
+  shifa.updateMessage(m.id, { speechHi: "हेलो" });
   shifa.updateMessage(m.id, { text: "re-explained" });
   eq("new text clears stale translations", shifa.getState().messages.find((x) => x.id === m.id)?.translations, undefined);
+  eq("new text clears the saved read-aloud text", shifa.getState().messages.find((x) => x.id === m.id)?.speechHi, undefined);
+
+  // Read-aloud: with no Urdu voice (iPhone, Mac, desktop Chrome) Urdu uses a Hindi voice, else Roman.
+  {
+    const w = (globalThis as Record<string, unknown>).window as Record<string, unknown>;
+    const said: { text: string; lang: string }[] = [];
+    let voices: { lang: string; name: string }[] = [];
+    (globalThis as Record<string, unknown>).SpeechSynthesisUtterance = class {
+      text: string;
+      lang = "";
+      voice: unknown = null;
+      rate = 1;
+      onend: unknown = null;
+      onerror: unknown = null;
+      constructor(text: string) {
+        this.text = text;
+      }
+    };
+    w.speechSynthesis = {
+      getVoices: () => voices,
+      speak: (u: { text: string; lang: string }) => said.push({ text: u.text, lang: u.lang }),
+      cancel: () => {},
+      addEventListener() {},
+      removeEventListener() {},
+    };
+    const speech = await import("@/lib/speech");
+    voices = [{ lang: "en-US", name: "Samantha" }, { lang: "hi-IN", name: "Lekha" }];
+    eq("no Urdu voice but Hindi: Urdu is read with the Hindi voice", speech.readAloudPlan("ur"), "hi");
+    eq("English and Roman read directly", [speech.readAloudPlan("en"), speech.readAloudPlan("roman")], ["direct", "direct"]);
+    ok("Listen button stays for Urdu", speech.canSpeak("ur"));
+    ok("Devanagari is spoken with the Hindi voice", speech.speak("अम्मी की रिपोर्ट में शुगर ज़्यादा है। डॉक्टर को दिखाएँ।", "hi") && said.length > 0 && said.every((u) => u.lang === "hi-IN" && /[\u0900-\u097F]/.test(u.text)));
+    ok("Urdu script is never sent to a missing Urdu voice", !speech.speak("امی کی رپورٹ", "ur"));
+    eq("decimals stay whole when split for speech", speech.chunk("HbA1c is 7.4% (normal 4.0 - 5.6). See a doctor."), ["HbA1c is 7.4% (normal 4.0 - 5.6). See a doctor."]);
+    ok("a long answer splits at sentence ends, never inside 7.4", speech.chunk(`${"Sugar is high. ".repeat(14)}HbA1c 7.4%.`).every((c) => !/\d\.$/.test(c) && !/^\d/.test(c)));
+    voices = [{ lang: "en-US", name: "Samantha" }];
+    eq("neither Urdu nor Hindi voice: read the Roman version", speech.readAloudPlan("ur"), "roman");
+    voices = [{ lang: "ur-PK", name: "Urdu" }, { lang: "hi-IN", name: "Lekha" }];
+    eq("an Urdu voice is used directly when there is one", speech.readAloudPlan("ur"), "direct");
+    delete w.speechSynthesis;
+    eq("no speech in the browser: no Listen button", speech.readAloudPlan("ur"), null);
+  }
   for (let i = 0; i < 210; i++) shifa.addMessage({ personId: p.id, role: "assistant", text: "x" + i });
   eq("history capped at 200 per person", shifa.getState().messages.filter((x) => x.personId === p.id).length, 200);
   ok("persisted to shifa:v1", (mem.get("shifa:v1") ?? "").includes("Nani"));
