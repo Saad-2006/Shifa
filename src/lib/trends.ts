@@ -96,3 +96,36 @@ export function buildTrends(reports: LabReport[], personId?: string): Trend[] {
     .sort((x, y) => abnormal(y.trend) - abnormal(x.trend) || y.change - x.change || x.trend.key.localeCompare(y.trend.key))
     .map((x) => x.trend);
 }
+
+/**
+ * How urgent a trend is right now, from its latest value's check by code:
+ * 3 danger level, 2 well outside the range, 1 slightly outside, 0 normal or not checked.
+ */
+export function trendUrgency(trend: Trend, reports: LabReport[]): number {
+  const last = trend.points[trend.points.length - 1];
+  const test = reports.find((r) => r.id === last?.reportId)?.tests.find((x) => x.key === trend.key);
+  if (!test) return trend.latestStatus === "low" || trend.latestStatus === "high" ? 1 : 0;
+  if (test.critical || test.severity === "critical") return 3;
+  if (test.status !== "low" && test.status !== "high") return 0;
+  return test.severity === "marked" ? 2 : 1;
+}
+
+const latestDate = (t: Trend) => t.points[t.points.length - 1]?.date ?? "";
+
+/** Most urgent first; then the most recently updated; then buildTrends' own order. */
+export function sortTrendsByUrgency(trends: Trend[], reports: LabReport[]): Trend[] {
+  return trends
+    .map((trend, i) => ({ trend, i, u: trendUrgency(trend, reports) }))
+    .sort((a, b) => b.u - a.u || latestDate(b.trend).localeCompare(latestDate(a.trend)) || a.i - b.i)
+    .map((x) => x.trend);
+}
+
+/**
+ * The one chart the laptop sidebar shows: the most urgent trend if any value is out of range
+ * (danger first), else the most recently updated one. The rest are on the dashboard.
+ */
+export function pickSidebarTrend(trends: Trend[], reports: LabReport[]): { trend: Trend; reason: "urgent" | "latest" } | null {
+  if (!trends.length) return null;
+  const top = sortTrendsByUrgency(trends, reports)[0];
+  return { trend: top, reason: trendUrgency(top, reports) > 0 ? "urgent" : "latest" };
+}

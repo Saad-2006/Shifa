@@ -1,10 +1,11 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ExternalLink, Pencil, RotateCcw, Stethoscope, Trash, UserPlus, Users } from "lucide-react";
+import Link from "next/link";
+import { ChevronRight, ExternalLink, LayoutDashboard, Pencil, RotateCcw, Stethoscope, Trash, UserPlus, Users } from "lucide-react";
 import { formatDate, t, urduFont } from "@/lib/i18n";
 import { personSubtitle } from "@/lib/relations";
-import { buildTrends } from "@/lib/trends";
+import { buildTrends, pickSidebarTrend } from "@/lib/trends";
 import type { AlertContact, LabReport, Lang, Person, Trend } from "@/lib/types";
 import AddPersonForm, { type NewPerson } from "./AddPersonForm";
 import AlertContacts from "./AlertContacts";
@@ -48,7 +49,10 @@ export default function Sidebar({
   contacts,
   onEditPerson,
   onChangeLang,
+  showTrendChart = true,
 }: {
+  /** The laptop sidebar shows one trend chart; the phone menu shows only the dashboard tab. */
+  showTrendChart?: boolean;
   /** Preferred language: set once here (also asked on the first screen). */
   onChangeLang: (lang: Lang) => void;
   contacts: AlertContact[];
@@ -70,6 +74,8 @@ export default function Sidebar({
   const [confirmReset, setConfirmReset] = useState(false);
   const mine = useMemo(() => personReports(reports, activeId), [reports, activeId]);
   const trends = useMemo(() => safeTrends(reports, activeId), [reports, activeId]);
+  // Laptop sidebar shows one chart: the most urgent trend, else the latest. The rest are on the dashboard.
+  const pick = useMemo(() => pickSidebarTrend(trends, reports), [trends, reports]);
   const active = people.find((p) => p.id === activeId) ?? null;
 
   const rowBtn = "flex min-h-11 w-full items-center gap-2.5 rounded-input px-2 text-start transition-colors hover:bg-bg";
@@ -169,19 +175,39 @@ export default function Sidebar({
         </section>
       )}
 
-      {/* Trends */}
+      {/* Trends: on a laptop one chart (most urgent, else latest); on a phone just the tab.
+          Every chart, with all reports, is on the dashboard. */}
       {active && mine.length > 0 && (
         <section>
           <SectionTitle lang={lang}>{t("trends", lang)}</SectionTitle>
-          {trends.length === 0 ? (
-            <p className={`px-1 text-sm text-muted ${urduFont(lang)}`}>{t("noTrends", lang)}</p>
-          ) : (
-            <div className="space-y-2">
-              {trends.map((tr) => (
-                <TrendChart key={tr.key} trend={tr} lang={lang} />
-              ))}
+          {!showTrendChart ? null : pick ? (
+            <div className="mb-2">
+              <p className={`mb-1.5 px-1 text-xs font-medium text-muted ${urduFont(lang)}`}>
+                {t(pick.reason === "urgent" ? "trendMostUrgent" : "trendLatest", lang)}
+              </p>
+              <TrendChart trend={pick.trend} lang={lang} />
             </div>
+          ) : (
+            <p className={`mb-2 px-1 text-sm text-muted ${urduFont(lang)}`}>{t("noTrends", lang)}</p>
           )}
+          <Link
+            href={`/dashboard?person=${encodeURIComponent(active.id)}`}
+            className="flex min-h-11 items-center gap-3 rounded-card border bg-bg p-3 transition-colors hover:border-ink/25"
+          >
+            <LayoutDashboard size={22} aria-hidden className="shrink-0" />
+            <span className="min-w-0 flex-1">
+              <span className={`block font-medium ${urduFont(lang)}`}>{t("trendsDashboard", lang)}</span>
+              <span className={`block text-xs text-muted ${urduFont(lang)}`}>
+                {[
+                  trends.length ? (trends.length === 1 ? t("chartOne", lang) : t("chartsN", lang, { n: trends.length })) : "",
+                  mine.length === 1 ? t("reportOne", lang) : t("reportsN", lang, { n: mine.length }),
+                ]
+                  .filter(Boolean)
+                  .join(" · ")}
+              </span>
+            </span>
+            <ChevronRight size={18} aria-hidden className="shrink-0 text-muted rtl:rotate-180" />
+          </Link>
         </section>
       )}
 

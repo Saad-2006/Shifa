@@ -9,7 +9,7 @@ import { buildTranslateSystem, normaliseDigits, numbersIn, numbersPreserved, num
 import assert from "node:assert/strict";
 import type { Person, ExtractedTest, ExtractedReport } from "@/lib/types";
 import { canonicalKey, checkTest, checkReport, parseNumber, parseRange, URGENCY_RANK } from "@/lib/labRules";
-import { buildTrends } from "@/lib/trends";
+import { buildTrends, pickSidebarTrend, sortTrendsByUrgency, trendUrgency } from "@/lib/trends";
 import { DEMO_ANSWER, SAMPLE_EXTRACTION, buildDemoFamily } from "@/lib/demoData";
 import { buildDoctorQuestions } from "@/components/doctorQuestions";
 
@@ -252,6 +252,23 @@ eq("demo answer in Urdu when Urdu is preferred", buildDemoFamily(new Date(), "ur
   ok("doctor questions name the person", qEn.some((q) => q.includes("for Ammi")) && qRo.some((q) => q.includes("Ammi ke liye")));
 }
 
+// Sidebar shows one chart: the most urgent trend (danger first), else the latest one.
+{
+  const pick = pickSidebarTrend(ammiTrends, fam.reports);
+  ok("demo: sidebar picks an urgent trend", pick?.reason === "urgent");
+  ok("demo: the pick is at least as urgent as every other trend", !!pick && ammiTrends.every((tr) => trendUrgency(tr, fam.reports) <= trendUrgency(pick.trend, fam.reports)));
+  const R = (id: string, date: string, k: string): ExtractedReport => ({ ...report([T("Potassium", k, "mmol/L", "3.5 - 5.1"), T("Haemoglobin", "13.0", "g/dL", "12.0 - 15.5")], date) });
+  const older = checkReport(R("a", "2026-01-10", "4.2"), { personId: "k", source: "scan", id: "k1" });
+  const danger = checkReport(R("b", "2026-09-10", "6.9"), { personId: "k", source: "scan", id: "k2" });
+  const kTrends = buildTrends([older, danger], "k");
+  eq("a danger-level latest value wins the sidebar", pickSidebarTrend(kTrends, [older, danger])?.trend.key, "potassium");
+  eq("danger is urgency 3", trendUrgency(kTrends.find((x) => x.key === "potassium")!, [older, danger]), 3);
+  const calm = checkReport(R("c", "2026-09-10", "4.4"), { personId: "k", source: "scan", id: "k3" });
+  const calmPick = pickSidebarTrend(buildTrends([older, calm], "k"), [older, calm]);
+  eq("all normal: the sidebar shows the latest change instead", calmPick?.reason, "latest");
+  eq("no trends, no chart", pickSidebarTrend([], []), null);
+  eq("dashboard order starts with the most urgent", sortTrendsByUrgency(kTrends, [older, danger])[0].key, "potassium");
+}
 ok("trends latest-abnormal first", ammiTrends.findIndex((t) => t.latestStatus === "normal") > ammiTrends.findIndex((t) => t.key === "hba1c"));
 eq("Abbu has no trends (1 report)", buildTrends(fam.reports, "demo-abbu").length, 0);
 eq("trend flat", buildTrends([
